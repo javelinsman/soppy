@@ -44,9 +44,10 @@ class InterfaceTelegramReceiver(threading.Thread):
                         m_data["file_ids"] = [f['file_id'] for f in message['photo']]
                         if 'caption' in message:
                             m_data["caption"] = message['caption']
-                    elif 'caption' in message:
-                        m_message["type"] = 'uncompressed_image'
-                        m_data["text"] = 'TODO'
+                    elif 'document' in message:
+                        m_message["type"] = 'document'
+                        m_data["file_id"] = message["document"]["file_id"]
+                        m_data["text"] = 'DOCUMENT:%s' % m_data["file_id"]
                     else:
                         m_message["type"] = 'text'
                         m_data["text"] = message["text"]

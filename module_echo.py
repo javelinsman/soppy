@@ -8,4 +8,4 @@ class ModuleEcho(Module):
     def filter(self, message):
         return True
     def operator(self, message):
-        self.send({"chat_id":320330606, "text":message["text"]})
+        self.send(message)
