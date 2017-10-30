@@ -25,23 +25,47 @@ class InterfaceTelegramReceiver(threading.Thread):
                 args = {}
                 if "message" in data:
                     message = data["message"]
-                    args["chat_id"] = message["chat"]["id"]
-                    args["author_id"] = message["from"]["id"]
-                    args["author_name"] = message["from"]["first_name"]
-                    args["text"] = message["text"]
+                    m_message = {}
+                    # Parse Context
+                    m_context = {
+                        "chat_id": message["chat"]["id"],
+                        "author_id": message["from"]["id"],
+                        "author_name": message["from"]["first_name"],
+                    }
+                    if "last_name" in message["from"]:
+                        m_context["author_name"] += ' ' + message["from"]["last_name"]
+                    m_message["context"] = m_context
 
-                    self.db.publish('channel-from-interface-to-module', json.dumps(args))
+                    # Parse Data
+                    m_data = {}
+                    if 'photo' in message:
+                        m_message["type"] = 'image'
+                        m_data["text"] = 'PHOTO:%s' % message['photo'][-1]['file_id']
+                        m_data["file_ids"] = [f['file_id'] for f in message['photo']]
+                        if 'caption' in message:
+                            m_data["caption"] = message['caption']
+                    elif 'caption' in message:
+                        m_message["type"] = 'uncompressed_image'
+                        m_data["text"] = 'TODO'
+                    else:
+                        m_message["type"] = 'text'
+                        m_data["text"] = message["text"]
 
+                    m_message["data"] = m_data
+                    logging.info('RECV: %r', m_message)
+                    self.db.publish('channel-from-interface-to-module', json.dumps(m_message))
             except Exception as e:
-                print("Error: ", str(e))
-                print(data)
+                logging.error('Error occured at webhook: %s', str(e))
+                logging.error('While handling the following data: %r', data)
             return ''
+
         @self.app.route("/shutdown", methods=['GET', 'POST'])
         def shutdown():
             func = request.environ.get('werkzeug.server.shutdown')
             if func is not None:
                 func()
             return ''
+
     def run(self):
         self.app.run(host=self.host, port=self.port, debug=False)
     def shutdown(self):
