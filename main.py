@@ -12,7 +12,10 @@ from module_echo import ModuleEcho
 
 # Basic Settings for Program
 FORMAT = '[%(levelname)s][%(asctime)s][%(module)s] %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.INFO)
+if '--debug' in sys.argv:
+    logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+else:
+    logging.basicConfig(format=FORMAT, level=logging.INFO)
 
 # Initialize Bot Components
 interfaces = {
