@@ -38,5 +38,5 @@ class InterfaceTelegram(threading.Thread):
     def run(self):
         self.app.run(host=self.host, port=self.port, debug=False)
     def shutdown(self):
-        logging.info('shutdown()')
+        logging.debug('shutdown()')
         requests.get('http://%s:%s/shutdown' % (self.host, self.port))
