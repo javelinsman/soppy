@@ -10,7 +10,7 @@ from database_wrapper_redis import DatabaseWrapperRedis
 from flask import Flask, request
 
 
-class InterfaceTelegram(threading.Thread):
+class InterfaceTelegramReceiver(threading.Thread):
     def __init__(self, host, port):
         super().__init__()
         self.host = host

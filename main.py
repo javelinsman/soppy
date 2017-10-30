@@ -6,7 +6,7 @@ import logging
 import bot_config
 
 # Bot Components
-from interface_telegram import InterfaceTelegram
+from interface_telegram_receiver import InterfaceTelegramReceiver
 from module_echo import ModuleEcho
 
 # Basic Settings for Program
@@ -15,7 +15,7 @@ logging.basicConfig(format=FORMAT, level=logging.INFO)
 
 # Initialize Bot Components
 interfaces = {
-    "telegram": InterfaceTelegram(host=bot_config.host, port=bot_config.port),
+    "telegram_receiver": InterfaceTelegramReceiver(host=bot_config.host, port=bot_config.port),
 }
 modules = {
     "echo": ModuleEcho(),
