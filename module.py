@@ -26,6 +26,9 @@ class Module(threading.Thread):
                     self.operator(message)
             time.sleep(1)
 
+    def send(self, message):
+        self.db.publish('channel-from-module-to-sender', json.dumps(message))
+
     def shutdown(self):
         self.__exit = True
 
