@@ -7,6 +7,7 @@ import bot_config
 
 # Bot Components
 from interface_telegram import InterfaceTelegram
+from module_echo import ModuleEcho
 
 # Basic Settings for Program
 FORMAT = '[%(levelname)s][%(asctime)s][%(module)s] %(message)s'
@@ -17,6 +18,7 @@ interfaces = {
     "telegram": InterfaceTelegram(host=bot_config.host, port=bot_config.port),
 }
 modules = {
+    "echo": ModuleEcho(),
 }
 for interface in interfaces.values():
     interface.start()
