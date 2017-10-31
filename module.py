@@ -20,7 +20,10 @@ class Module(threading.Thread):
         logging.debug('Module "%s" __init__()', module_name)
         super().__init__()
         self.module_name = module_name
-        self.db = DatabaseWrapperRedis(host=bot_config.db_host, port=bot_config.db_port, db=bot_config.db_num)
+        self.db = DatabaseWrapperRedis(
+            host=bot_config.db_host, port=bot_config.db_port,
+            db=bot_config.db_num, namespace=module_name
+            )
         self.pubsub = self.db.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe('channel-from-interface-to-module')
         self.__exit = False
