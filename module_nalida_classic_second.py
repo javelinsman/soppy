@@ -8,7 +8,11 @@ This module contains
     - team notification
 """
 
+import logging
+
 from module import Module
+
+import bot_config
 
 class ModuleNalidaClassicSecond(Module):
     "Module description above"
@@ -21,12 +25,19 @@ class ModuleNalidaClassicSecond(Module):
         return self.db.sismember(self.key_set_registered_users, context["author_id"])
 
     def filter(self, message):
-        return True
+        context = message["context"]
+        return any((
+            context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN,
+            self.membership_test(context),
+            ))
 
     def operator(self, message):
-        if self.membership_test(message["context"]):
+        context = message["context"]
+        if context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN:
+            message["data"]["text"] = "What's up, master?"
+            self.send(message)
+        elif self.membership_test(message["context"]):
             message["data"]["text"] = "I know you"
             self.send(message)
         else:
-            message["data"]["text"] = "I don't know you"
-            self.send(message)
+            logging.error('This clause should never be executed!')
