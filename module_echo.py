@@ -1,8 +1,9 @@
+"""This module defines simple echo-ing module"""
+
 from module import Module
 
-import logging
-
 class ModuleEcho(Module):
+    "simple echo-ing module"
     def __init__(self):
         super().__init__(__name__)
     def filter(self, message):

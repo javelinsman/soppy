@@ -1,3 +1,7 @@
+"""
+This module defines class Module. Its function is described below.
+"""
+import sys
 import time
 import json
 import threading
@@ -8,6 +12,10 @@ import bot_config
 from database_wrapper_redis import DatabaseWrapperRedis
 
 class Module(threading.Thread):
+    """This class defines the skeleton structure of Nalinyang-Twix MODULEs,
+        which are independent reactive components to handle messages
+        broadcasted by receiver interfaces."""
+
     def __init__(self, module_name):
         logging.debug('Module "%s" __init__()', module_name)
         super().__init__()
@@ -27,15 +35,21 @@ class Module(threading.Thread):
             time.sleep(1)
 
     def send(self, message):
+        "broadcast message to sender interfaces"
         self.db.publish('channel-from-module-to-sender', json.dumps(message))
 
     def shutdown(self):
+        "this thread will be terminated soon when called"
         self.__exit = True
 
     def filter(self, message):
+        "filter method should return True for messages of interest"
+        logging.debug('filter(%s)', message)
         logging.error('"filter" method of Module "%s" is not overridden', self.module_name)
-        raise
+        sys.exit(0)
 
     def operator(self, message):
+        "operator method should provide proper handlings for messages of interest"
+        logging.debug('operator(%s)', message)
         logging.error('"operator" method of Module "%s" is not overridden', self.module_name)
-        raise
+        sys.exit(0)
