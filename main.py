@@ -15,7 +15,9 @@ import bot_config
 # Bot Components
 from interface_telegram_receiver import InterfaceTelegramReceiver
 from interface_telegram_sender import InterfaceTelegramSender
-from module_echo import ModuleEcho
+#from module_echo import ModuleEcho
+from module_nalida_classic_second import ModuleNalidaClassicSecond
+
 
 # Basic Settings for Program
 FORMAT = '[%(levelname)s][%(asctime)s][%(module)s] %(message)s'
@@ -30,7 +32,8 @@ INTERFACES = {
     "telegram_sender": InterfaceTelegramSender(),
 }
 MODULES = {
-    "echo": ModuleEcho(),
+    #"echo": ModuleEcho(),
+    "nalida_classic_second": ModuleNalidaClassicSecond(),
 }
 
 def start_components():
@@ -56,7 +59,7 @@ def command_line_mode():
                 break
         except (KeyboardInterrupt, SystemExit):
             logging.warning('Please enter "exit" to shutdown the program')
-        logging.info('Exiting command line mode')
+    logging.info('Exiting command line mode')
 
 if __name__ == "__main__":
     start_components()
