@@ -1,3 +1,10 @@
+"""
+Main module for Nalinyang-Twix.
+This module turns on several other components(which is thread),
+            enters into command-line mode,
+            and gently stop components when it terminates
+"""
+
 # Built-in Modules
 import sys
 import logging
@@ -18,31 +25,41 @@ else:
     logging.basicConfig(format=FORMAT, level=logging.INFO)
 
 # Initialize Bot Components
-interfaces = {
+INTERFACES = {
     "telegram_receiver": InterfaceTelegramReceiver(host=bot_config.host, port=bot_config.port),
     "telegram_sender": InterfaceTelegramSender(),
 }
-modules = {
+MODULES = {
     "echo": ModuleEcho(),
 }
-for interface in interfaces.values():
-    interface.start()
-for module in modules.values():
-    module.start()
 
-# Enter into Command-line Mode
-while True:
-    try:
-        command = input()
-        if command.lower() == 'exit':
-            raise
-    except (KeyboardInterrupt, SystemExit):
-        logging.warning('Please enter "exit" to shutdown the program')
-    except:
-        logging.info('Program will terminate after shutting down all components')
-        for interface in interfaces.values():
-            interface.shutdown()
-        for module in modules.values():
-            module.shutdown()
-        break
-logging.info('Program has terminated successfully')
+def start_components():
+    "Turn on all interfaces and modules"
+    for interface in INTERFACES.values():
+        interface.start()
+    for module in MODULES.values():
+        module.start()
+
+def stop_components():
+    "Turn off all interfaces and modules"
+    for interface in INTERFACES.values():
+        interface.shutdown()
+    for module in MODULES.values():
+        module.shutdown()
+
+def command_line_mode():
+    "command-line mode to operate the bot"
+    while True:
+        try:
+            command = input()
+            if command.lower() == 'exit':
+                break
+        except (KeyboardInterrupt, SystemExit):
+            logging.warning('Please enter "exit" to shutdown the program')
+        logging.info('Exiting command line mode')
+
+if __name__ == "__main__":
+    start_components()
+    command_line_mode()
+    stop_components()
+    logging.info('Program has terminated successfully')
