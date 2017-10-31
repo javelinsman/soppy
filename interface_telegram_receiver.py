@@ -1,3 +1,7 @@
+"""
+Interface to receive messages from Telegram
+"""
+
 import threading
 import logging
 import json
@@ -11,18 +15,20 @@ from flask import Flask, request
 
 
 class InterfaceTelegramReceiver(threading.Thread):
+    "This class is for receiveing messages from telegram by operating a Flask server"
     def __init__(self, host, port):
         super().__init__()
         self.host = host
         self.port = port
-        self.db = DatabaseWrapperRedis(host=bot_config.DB_HOST, port=bot_config.DB_PORT, db=bot_config.DB_NUM)
+        self.db = DatabaseWrapperRedis(host=bot_config.DB_HOST, #pylint: disable=invalid-name
+                                       port=bot_config.DB_PORT, db=bot_config.DB_NUM)
 
         self.app = Flask(__name__)
-        @self.app.route("/", methods=['GET','POST'])
-        def webhook():
+        @self.app.route("/", methods=['GET', 'POST'])
+        def webhook(): #pylint: disable=unused-variable
+            "listens to messages from Telegram webhook"
             try:
                 data = request.get_json()
-                args = {}
                 if "message" in data:
                     message = data["message"]
                     m_message = {}
@@ -55,13 +61,14 @@ class InterfaceTelegramReceiver(threading.Thread):
                     m_message["data"] = m_data
                     logging.info('RECV: %r', m_message)
                     self.db.publish('channel-from-interface-to-module', json.dumps(m_message))
-            except Exception as e:
-                logging.error('Error occured at webhook: %s', str(e))
+            except Exception as exception: #pylint: disable=broad-except
+                logging.error('Error occured at webhook: %s', str(exception))
                 logging.error('While handling the following data: %r', data)
             return ''
 
         @self.app.route("/shutdown", methods=['GET', 'POST'])
-        def shutdown():
+        def shutdown(): #pylint: disable=unused-variable
+            "shutdown the Flask server"
             func = request.environ.get('werkzeug.server.shutdown')
             if func is not None:
                 func()
@@ -70,5 +77,6 @@ class InterfaceTelegramReceiver(threading.Thread):
     def run(self):
         self.app.run(host=self.host, port=self.port, debug=False)
     def shutdown(self):
+        "sends http request to Flask server to call '/shutdown' inside"
         logging.debug('shutdown()')
         requests.get('http://%s:%s/shutdown' % (self.host, self.port))
