@@ -15,7 +15,7 @@ class InterfaceTelegramReceiver(threading.Thread):
         super().__init__()
         self.host = host
         self.port = port
-        self.db = DatabaseWrapperRedis(host=bot_config.db_host, port=bot_config.db_port, db=bot_config.db_num)
+        self.db = DatabaseWrapperRedis(host=bot_config.DB_HOST, port=bot_config.DB_PORT, db=bot_config.DB_NUM)
 
         self.app = Flask(__name__)
         @self.app.route("/", methods=['GET','POST'])

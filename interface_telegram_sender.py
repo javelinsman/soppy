@@ -1,19 +1,22 @@
+"""
+Interface that sends message to telegram
+"""
 import threading
 import logging
 import json
 import time
 import queue
+from collections import defaultdict
+
 import requests
 import bot_config
-
-from collections import defaultdict
 
 from database_wrapper_redis import DatabaseWrapperRedis
 
 class InterfaceTelegramSender(threading.Thread):
     def __init__(self):
         super().__init__()
-        self.db = DatabaseWrapperRedis(host=bot_config.db_host, port=bot_config.db_port, db=bot_config.db_num)
+        self.db = DatabaseWrapperRedis(host=bot_config.DB_HOST, port=bot_config.DB_PORT, db=bot_config.DB_NUM)
         self.pubsub = self.db.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe('channel-from-module-to-sender')
         self.__exit = False
@@ -48,7 +51,7 @@ class InterfaceTelegramSender(threading.Thread):
 
     def send_message(self, cid, text):
         t = threading.Thread(target = requests.post,
-            args = (bot_config.api_base + 'sendMessage', ),
+            args = (bot_config.API_BASE + 'sendMessage', ),
             kwargs = {
                 'data': {
                     "chat_id" : cid,
@@ -61,7 +64,7 @@ class InterfaceTelegramSender(threading.Thread):
 
     def send_message_with_markup(self, cid, text, markup):
         t = threading.Thread(target = requests.post,
-            args = (bot_config.api_base + 'sendMessage', ),
+            args = (bot_config.API_BASE + 'sendMessage', ),
             kwargs = {
                 'data': {
                     "chat_id" : cid,
@@ -76,7 +79,7 @@ class InterfaceTelegramSender(threading.Thread):
     def send_image(self, cid, fid, caption=''):
         logging.debug('send_image(%r, %r, %r)', cid, fid, caption)
         t = threading.Thread(target = requests.post,
-            args = (bot_config.api_base + 'sendPhoto', ),
+            args = (bot_config.API_BASE + 'sendPhoto', ),
             kwargs = {
                 'data': {
                     "chat_id" : cid,
@@ -91,7 +94,7 @@ class InterfaceTelegramSender(threading.Thread):
     def send_document(self, cid, fid):
         logging.debug('send_document(%r, %r)', cid, fid)
         t = threading.Thread(target = requests.post,
-            args = (bot_config.api_base + 'sendDocument', ),
+            args = (bot_config.API_BASE + 'sendDocument', ),
             kwargs = {
                 'data': {
                     "chat_id" : cid,

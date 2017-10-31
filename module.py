@@ -21,8 +21,8 @@ class Module(threading.Thread):
         super().__init__()
         self.module_name = module_name
         self.db = DatabaseWrapperRedis(
-            host=bot_config.db_host, port=bot_config.db_port,
-            db=bot_config.db_num, namespace=module_name
+            host=bot_config.DB_HOST, port=bot_config.DB_PORT,
+            db=bot_config.DB_NUM, namespace=module_name
             )
         self.pubsub = self.db.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe('channel-from-interface-to-module')

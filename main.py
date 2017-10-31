@@ -28,7 +28,7 @@ else:
 
 # Initialize Bot Components
 INTERFACES = {
-    "telegram_receiver": InterfaceTelegramReceiver(host=bot_config.host, port=bot_config.port),
+    "telegram_receiver": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT),
     "telegram_sender": InterfaceTelegramSender(),
 }
 MODULES = {
