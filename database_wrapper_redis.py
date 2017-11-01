@@ -28,7 +28,7 @@ class DatabaseWrapperRedis: #pylint: disable=too-few-public-methods
         self.explicitly_handled_methods = [
             'get', 'set', 'delete', 'expire',
             'lpush', 'lpop', 'rpush', 'rpop', 'llen', 'lrange',
-            'sadd', 'smembers', 'sismember',
+            'sadd', 'srem', 'smembers', 'sismember',
             ]
     def __getattr__(self, attr_name):
         if attr_name in self.explicitly_handled_methods:
