@@ -54,7 +54,7 @@ class Module(threading.Thread):
         message = {
             "type": 'text',
             "context": context,
-            "data": {"text": text}
+            "data": {"text": text},
             }
         self.send(message)
 

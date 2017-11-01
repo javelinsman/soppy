@@ -17,6 +17,7 @@ from interface_telegram_receiver import InterfaceTelegramReceiver
 from interface_telegram_sender import InterfaceTelegramSender
 #from module_echo import ModuleEcho
 from module_nalida_classic_second import ModuleNalidaClassicSecond
+from module_admin import ModuleAdmin
 
 
 # Basic Settings for Program
@@ -34,6 +35,7 @@ INTERFACES = {
 MODULES = {
     #"echo": ModuleEcho(),
     "nalida_classic_second": ModuleNalidaClassicSecond(),
+    "admin": ModuleAdmin(),
 }
 
 def start_components():
