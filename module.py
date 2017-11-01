@@ -49,6 +49,14 @@ class Module(threading.Thread):
         "broadcast message to sender interfaces"
         self.db.publish('channel-from-module-to-sender', json.dumps(message))
 
+    def send_text(self, context, text):
+        "send plain text to context"
+        message = {
+            "context": context,
+            "data": {"text": text}
+            }
+        self.send(message)
+
     def shutdown(self):
         "this thread will be terminated soon when called"
         self.__exit = True
