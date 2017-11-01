@@ -20,7 +20,7 @@ class Module(threading.Thread):
         logging.debug('Module "%s" __init__()', module_name)
         super().__init__()
         self.module_name = module_name
-        self.db = DatabaseWrapperRedis(
+        self.db = DatabaseWrapperRedis( #pylint: disable=invalid-name
             host=bot_config.DB_HOST, port=bot_config.DB_PORT,
             db=bot_config.DB_NUM, namespace=module_name
             )
@@ -52,6 +52,7 @@ class Module(threading.Thread):
     def send_text(self, context, text):
         "send plain text to context"
         message = {
+            "type": 'text',
             "context": context,
             "data": {"text": text}
             }
