@@ -25,7 +25,16 @@ class ModuleNalidaClassicSecond(Module):
 
     def membership_test(self, context):
         "check if the context is registered for this module"
-        return self.db.sismember(self.key_set_registered_users, context["author_id"])
+        return self.db.sismember(self.key_set_registered_users, self.serialize_context(context))
+
+    def is_registration_key(self, key):
+        "check if the key is the registration key"
+        return self.db.sismember(self.key_set_registration_keys, key)
+
+    def register_user(self, context, registration_key):
+        "register the context as a user of this module"
+        self.db.sadd(self.key_set_registered_users, self.serialize_context(context))
+        self.db.srem(self.key_set_registration_keys, registration_key)
 
     def generate_new_registration_key(self):
         "make new key, insert to db, and return it"
@@ -34,7 +43,7 @@ class ModuleNalidaClassicSecond(Module):
                 self.module_name,
                 ''.join([random.choice(string.ascii_letters) for _ in range(25)])
                 )
-            if not self.db.sismember(self.key_set_registration_keys, new_key):
+            if not self.is_registration_key(new_key):
                 break
         self.db.sadd(self.key_set_registration_keys, new_key)
         return new_key
@@ -44,8 +53,7 @@ class ModuleNalidaClassicSecond(Module):
         return any((
             context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN,
             self.membership_test(context),
-            message["type"] == 'text' and
-            self.db.sismember(self.key_set_registration_keys, message["data"]["text"]),
+            message["type"] == 'text' and self.is_registration_key(message["data"]["text"]),
             ))
 
     def operator(self, message):
@@ -53,11 +61,11 @@ class ModuleNalidaClassicSecond(Module):
         if context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN:
             message["data"]["text"] = self.generate_new_registration_key()
             self.send(message)
-        if message["type"] == 'text' and \
-           self.db.sismember(self.key_set_registration_keys, message["data"]["text"]):
-            message["data"]["text"] = "You'll be registered as a user"
+        if message["type"] == 'text' and self.is_registration_key(message["data"]["text"]):
+            self.register_user(context, message["data"]["text"])
+            message["data"]["text"] = "You are registered as a user"
             self.send(message)
-        elif self.membership_test(message["context"]):
+        elif self.membership_test(context):
             message["data"]["text"] = "I know you"
             self.send(message)
         else:
