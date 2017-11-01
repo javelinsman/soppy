@@ -37,6 +37,14 @@ class Module(threading.Thread):
                     self.operator(message)
             time.sleep(1)
 
+    @staticmethod
+    def serialize_context(context):
+        "make context information serialized to string"
+        return '%s:%s' % (
+            context["chat_id"],
+            context["author_id"]
+        )
+
     def send(self, message):
         "broadcast message to sender interfaces"
         self.db.publish('channel-from-module-to-sender', json.dumps(message))
