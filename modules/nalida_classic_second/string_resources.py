@@ -16,3 +16,5 @@ ASK_GOAL = '4주 동안 이룰 목표를 알려주세요'
 GOAL_SUBMITTED = '좋은 목표 잘 들었어요!'
 INSTRUCTIONS_FOR_GOAL = '이제부터 매일 사진을 올리시면 그것이 반영될 거예요'
 INSTRUCTIONS_FOR_EMOREC = '그리고 오늘부터 매일 3번씩 감정을 물어볼 거예요'
+
+COMMAND_MAKE_SESSION = '세션등록'

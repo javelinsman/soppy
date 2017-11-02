@@ -14,6 +14,8 @@ import random
 
 
 from modules.nalida_classic_second import string_resources as sr
+from modules.nalida_classic_second.user import User
+from modules.nalida_classic_second.session import Session
 from basic.module import Module
 
 import bot_config
@@ -22,6 +24,8 @@ class ModuleNalidaClassicSecond(Module):
     "Module description above"
     def __init__(self):
         super().__init__(__name__)
+        self.user = User(self.db)
+        self.session = Session(self.db, self.user)
         self.key_set_registered_users = 'set-registered-users'
         self.key_set_registration_keys = 'set-registration-keys'
         self.key_context_state = 'key-context-state:%s'
@@ -92,6 +96,7 @@ class ModuleNalidaClassicSecond(Module):
             text = message["data"]["text"]
             if text == sr.RESPONSE_NICKNAME_YES:
                 nickname = self.db.get('candidate-nickname')
+                self.user.nick(context, nickname)
                 self.send_text(context, sr.NICKNAME_SUBMITTED % nickname)
                 self.send_text(context, sr.ASK_EXPLANATION_FOR_NICKNAME)
                 self.set_state(context, 'asked_nick_explanation')
@@ -108,6 +113,7 @@ class ModuleNalidaClassicSecond(Module):
         context = message["context"]
         if message["type"] == 'text':
             text = message["data"]["text"]
+            self.user.explanation(context, text)
             self.send_text(context, sr.EXPLANATION_SUBMITTED)
             self.send_text(context, sr.ASK_GOAL)
             self.set_state(context, 'asked_goal')
@@ -119,6 +125,7 @@ class ModuleNalidaClassicSecond(Module):
         context = message["context"]
         if message["type"] == 'text':
             text = message["data"]["text"]
+            self.user.goal(context, text)
             self.send_text(context, sr.GOAL_SUBMITTED)
             self.send_text(context, sr.INSTRUCTIONS_FOR_GOAL)
             self.send_text(context, sr.INSTRUCTIONS_FOR_EMOREC)
@@ -133,6 +140,12 @@ class ModuleNalidaClassicSecond(Module):
                 text = message["data"]["text"]
                 if text == sr.COMMAND_PUBLISH_REGISTRATION_KEY:
                     self.send_text(context, self.generate_new_registration_key())
+                elif text.split()[0] == sr.COMMAND_MAKE_SESSION:
+                    session_name = self.session.create(
+                        list(map(self.parse_context, text.split()[1:-1])))
+                    self.session.target_chat(session_name, text.split()[-1])
+                    self.send_text(context, 'created session: %s, target chat is %s' %
+                                   (session_name, text.split()[-1]))
         elif self.membership_test(context):
             state = self.get_state(context)
             if state is not None:
