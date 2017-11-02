@@ -73,6 +73,59 @@ class ModuleNalidaClassicSecond(Module):
             #message["type"] == 'tick',
             ))
 
+    def state_asked_nick(self, message):
+        "response should be their wanted nickname"
+        context = message["context"]
+        if message["type"] == 'text':
+            text = message["data"]["text"]
+            self.send_text(context, sr.CONFIRM_NICKNAME % text)
+            self.db.set('candidate-nickname', text)
+            self.set_state(context, 'asked_nick_confirmation')
+        else:
+            self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
+
+    def state_asked_nick_confirmation(self, message):
+        """response should be YES or NO depending on whether the nickname is
+           submitted correctly"""
+        context = message["context"]
+        if message["type"] == 'text':
+            text = message["data"]["text"]
+            if text == sr.RESPONSE_NICKNAME_YES:
+                nickname = self.db.get('candidate-nickname')
+                self.send_text(context, sr.NICKNAME_SUBMITTED % nickname)
+                self.send_text(context, sr.ASK_EXPLANATION_FOR_NICKNAME)
+                self.set_state(context, 'asked_nick_explanation')
+            elif text == sr.RESPONSE_NICKNAME_NO:
+                self.send_text(context, sr.ASK_NICKNAME_AGAIN)
+                self.set_state(context, 'asked_nick')
+            else:
+                self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
+        else:
+            self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
+
+    def state_asked_nick_explanation(self, message):
+        "response should be the explanation in one message"
+        context = message["context"]
+        if message["type"] == 'text':
+            text = message["data"]["text"]
+            self.send_text(context, sr.EXPLANATION_SUBMITTED)
+            self.send_text(context, sr.ASK_GOAL)
+            self.set_state(context, 'asked_goal')
+        else:
+            self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
+
+    def state_asked_goal(self, message):
+        "response should be the description of the goal in one message"
+        context = message["context"]
+        if message["type"] == 'text':
+            text = message["data"]["text"]
+            self.send_text(context, sr.GOAL_SUBMITTED)
+            self.send_text(context, sr.INSTRUCTIONS_FOR_GOAL)
+            self.send_text(context, sr.INSTRUCTIONS_FOR_EMOREC)
+            self.set_state(context, '')
+        else:
+            self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
+
     def operator(self, message):
         context = message["context"]
         if context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN:
@@ -82,53 +135,15 @@ class ModuleNalidaClassicSecond(Module):
                     self.send_text(context, self.generate_new_registration_key())
         elif self.membership_test(context):
             state = self.get_state(context)
-            if state == 'ASKED-NAME':
-                if message["type"] == 'text':
-                    text = message["data"]["text"]
-                    self.send_text(context, sr.CONFIRM_NICKNAME % text)
-                    self.db.set('candidate-nickname', text)
-                    self.set_state(context, 'ASKED-NAME-AGAIN')
-                else:
-                    self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
-            elif state == 'ASKED-NAME-AGAIN':
-                if message["type"] == 'text':
-                    text = message["data"]["text"]
-                    if text == sr.RESPONSE_NICKNAME_YES:
-                        nickname = self.db.get('candidate-nickname')
-                        self.send_text(context, sr.NICKNAME_SUBMITTED % nickname)
-                        self.send_text(context, sr.ASK_EXPLANATION_FOR_NICKNAME)
-                        self.set_state(context, 'ASKED-EXPLANATION-FOR-NICKNAME')
-                    elif text == sr.RESPONSE_NICKNAME_NO:
-                        self.send_text(context, sr.ASK_NICKNAME_AGAIN)
-                        self.set_state(context, 'ASKED-NAME')
-                    else:
-                        self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
-                else:
-                    self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
-            elif state == 'ASKED-EXPLANATION-FOR-NICKNAME':
-                if message["type"] == 'text':
-                    text = message["data"]["text"]
-                    self.send_text(context, sr.EXPLANATION_SUBMITTED)
-                    self.send_text(context, sr.ASK_GOAL)
-                    self.set_state(context, 'ASKED-GOAL')
-                else:
-                    self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
-            elif state == 'ASKED-GOAL':
-                if message["type"] == 'text':
-                    text = message["data"]["text"]
-                    self.send_text(context, sr.GOAL_SUBMITTED)
-                    self.send_text(context, sr.INSTRUCTIONS_FOR_GOAL)
-                    self.send_text(context, sr.INSTRUCTIONS_FOR_EMOREC)
-                    self.set_state(context, '')
-                else:
-                    self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
-            elif state is None:
+            if state is not None:
+                getattr(self, 'state_' + state)(message)
+            else:
                 self.send_text(context, 'meow')
 
         elif message["type"] == 'text' and self.is_registration_key(message["data"]["text"]):
             self.register_user(context, message["data"]["text"])
             self.send_text(context, sr.REGISTER_COMPLETE)
             self.send_text(context, sr.ASK_NICKNAME)
-            self.set_state(context, 'ASKED-NAME')
+            self.set_state(context, 'asked_nick')
         else:
             logging.error('This clause should never be executed!')
