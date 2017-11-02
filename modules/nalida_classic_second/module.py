@@ -32,7 +32,7 @@ class ModuleNalidaClassicSecond(Module):
         self.key_set_registration_keys = 'set-registration-keys'
         self.key_context_state = 'key-context-state:%s'
         self.key_list_goal_achievement = 'key-list-goal-achievement:%s'
-        self.key_list_emorec_response = 'key-emorec-response'
+        self.key_list_emorec_response = 'key-emorec-response:%s'
     def membership_test(self, context):
         "check if the context is registered for this module"
         return self.db.sismember(self.key_set_registered_users, self.serialize_context(context))
@@ -126,8 +126,6 @@ class ModuleNalidaClassicSecond(Module):
 
     def state_asked_goal(self, message):
         "response should be the description of the goal in one message"
-        """TODO: to prevent emorec response being recorded, branch order
-        in operate function is adjusted. It is error-prone."""
 
         context = message["context"]
         if message["type"] == 'text':
@@ -141,10 +139,21 @@ class ModuleNalidaClassicSecond(Module):
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
 
     def state_asked_emotion_detail(self, message):
-        pass
+        "record emotion response detail"
+        context = message["context"]
+        if message["type"] == 'text':
+            key = self.key_list_emorec_response % self.serialize_context(context)
+            recent_response = json.loads(self.db.lpop(key))
+            recent_response[1] = message["data"]["text"]
+            self.db.lpush(key, json.dumps(recent_response))
+            self.send_text(context, sr.RESPONSE_RECORDED)
+            logging.debug('recent_response: %r', recent_response)
+        self.set_state(context, '')
 
     def state_asked_goal_detail(self, message):
         "if response is text, record it as goal detail"
+        """TODO: to prevent emorec response being recorded, branch order
+        in operate function is adjusted. It is error-prone."""
         context = message["context"]
         if message["type"] == 'text':
             key = self.key_list_goal_achievement % self.serialize_context(context)
@@ -152,8 +161,8 @@ class ModuleNalidaClassicSecond(Module):
             recent_response[1] = message["data"]["text"]
             self.db.lpush(key, json.dumps(recent_response))
             self.send_text(context, sr.RESPONSE_RECORDED)
-        else:
-            self.set_state(context, '')
+            logging.debug('recent_response: %r', recent_response)
+        self.set_state(context, '')
 
     def record_goal_response(self, message):
         "record daily goal achievement and share it"
@@ -162,15 +171,23 @@ class ModuleNalidaClassicSecond(Module):
         file_id = message["data"]["file_ids"][-1]
         self.db.lpush(key, json.dumps([file_id, '']))
         target_chat = self.session.target_chat(self.user.session(context))
-        logging.debug('session_name is %s', self.user.session(context))
-        logging.debug('target_chat is %s', target_chat)
+        sharing_message = sr.GOAL_SHARING_MESSAGE % self.user.nick(context)
+        self.send_text({"chat_id":target_chat}, sharing_message)
         self.send_image({"chat_id":target_chat}, file_id)
         self.send_text(context, sr.ASK_GOAL_ACHIEVEMENT_DETAIL)
         self.set_state(context, 'asked_goal_detail')
 
     def record_emorec_response(self, message):
         "record emorec response and share it"
-        pass
+        context = message["context"]
+        key = self.key_list_emorec_response % self.serialize_context(context)
+        text = message["data"]["text"]
+        self.db.lpush(key, json.dumps([text, '']))
+        target_chat = self.session.target_chat(self.user.session(context))
+        sharing_message = sr.EMOREC_SHARING_MESSAGE % (self.user.nick(context), text)
+        self.send_image({"chat_id":target_chat}, sharing_message)
+        self.send_text(context, sr.ASK_EMOTION_DETAIL)
+        self.set_state(context, 'asked_emotion_detail')
 
     def operator(self, message):
         context = message["context"]

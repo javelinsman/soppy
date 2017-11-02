@@ -18,6 +18,9 @@ INSTRUCTIONS_FOR_GOAL = '이제부터 매일 사진을 올리시면 그것이 �
 INSTRUCTIONS_FOR_EMOREC = '그리고 오늘부터 매일 3번씩 감정을 물어볼 거예요'
 
 COMMAND_MAKE_SESSION = '세션등록'
+GOAL_SHARING_MESSAGE = '%s님의 목표 인증샷'
 ASK_GOAL_ACHIEVEMENT_DETAIL = '굳. 소감 좀 자세히 말해줄래?'
 
 RESPONSE_RECORDED = '응답이 기록되었어요. 감사합니다!'
+EMOREC_SHARING_MESSAGE = '%s님의 감정: %s'
+ASK_EMOTION_DETAIL = '감정을 더 자세히 알려주세요.'
