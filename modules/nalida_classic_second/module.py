@@ -87,7 +87,8 @@ class ModuleNalidaClassicSecond(Module):
         if message["type"] == 'text':
             text = message["data"]["text"]
             self.send_text(context, sr.CONFIRM_NICKNAME % text)
-            self.db.set('candidate-nickname', text)
+            serialized = self.serialize_context(context)
+            self.db.set('candidate-nickname:%s' % serialized, text)
             self.set_state(context, 'asked_nick_confirmation')
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
@@ -99,7 +100,8 @@ class ModuleNalidaClassicSecond(Module):
         if message["type"] == 'text':
             text = message["data"]["text"]
             if text == sr.RESPONSE_NICKNAME_YES:
-                nickname = self.db.get('candidate-nickname')
+                serialized = self.serialize_context(context)
+                nickname = self.db.get('candidate-nickname:%s' % serialized)
                 self.user.nick(context, nickname)
                 self.send_text(context, sr.NICKNAME_SUBMITTED % nickname)
                 self.send_text(context, sr.ASK_EXPLANATION_FOR_NICKNAME)
