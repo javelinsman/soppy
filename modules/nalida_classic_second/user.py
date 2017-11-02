@@ -1,5 +1,7 @@
 "manages user informations for nalida classic 2nd"
 
+import logging
+
 from basic.module import Module
 
 class User:
@@ -43,6 +45,9 @@ class User:
         serialized = Module.serialize_context(context)
         key = self.key_session % serialized
         if value is None:
+            logging.debug('context is %s, session get returns %s',
+                          serialized, self.db.get(key))
             return self.db.get(key)
         else:
+            logging.debug('context is %s, session set to %s', serialized, value)
             self.db.set(key, value)

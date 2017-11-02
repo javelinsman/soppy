@@ -18,3 +18,4 @@ INSTRUCTIONS_FOR_GOAL = '이제부터 매일 사진을 올리시면 그것이 �
 INSTRUCTIONS_FOR_EMOREC = '그리고 오늘부터 매일 3번씩 감정을 물어볼 거예요'
 
 COMMAND_MAKE_SESSION = '세션등록'
+ASK_GOAL_ACHIEVEMENT_DETAIL = '굳. 소감 좀 자세히 말해줄래?'

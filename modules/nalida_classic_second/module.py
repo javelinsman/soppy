@@ -11,9 +11,11 @@ This module contains
 import logging
 import string
 import random
+import json
 
 
 from modules.nalida_classic_second import string_resources as sr
+from modules.nalida_classic_second import emorec
 from modules.nalida_classic_second.user import User
 from modules.nalida_classic_second.session import Session
 from basic.module import Module
@@ -29,6 +31,8 @@ class ModuleNalidaClassicSecond(Module):
         self.key_set_registered_users = 'set-registered-users'
         self.key_set_registration_keys = 'set-registration-keys'
         self.key_context_state = 'key-context-state:%s'
+        self.key_list_goal_achievement = 'key-list-goal-achievement:%s'
+        self.key_list_emorec_response = 'key-emorec-response'
     def membership_test(self, context):
         "check if the context is registered for this module"
         return self.db.sismember(self.key_set_registered_users, self.serialize_context(context))
@@ -133,6 +137,29 @@ class ModuleNalidaClassicSecond(Module):
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
 
+    def state_asked_emotion_detail(self, message):
+        pass
+
+    def state_asked_goal_detail(self, message):
+        self.send_text(message["context"], 'good')
+        self.set_state(message["context"], '')
+
+    def record_goal_response(self, message):
+        "record daily goal achievement and share it"
+        context = message["context"]
+        key = self.key_list_goal_achievement % self.serialize_context(context)
+        file_id = message["data"]["file_ids"][-1]
+        self.db.rpush(key, json.dumps((file_id, '')))
+        target_chat = self.session.target_chat(self.user.session(context))
+        logging.debug('session_name is %s', self.user.session(context))
+        logging.debug('target_chat is %s', target_chat)
+        self.send_image({"chat_id":target_chat}, file_id)
+        self.send_text(context, sr.ASK_GOAL_ACHIEVEMENT_DETAIL)
+        self.set_state(context, 'asked_goal_detail')
+
+    def record_emorec_response(self, message):
+        pass
+
     def operator(self, message):
         context = message["context"]
         if context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN:
@@ -150,6 +177,10 @@ class ModuleNalidaClassicSecond(Module):
             state = self.get_state(context)
             if state is not None:
                 getattr(self, 'state_' + state)(message)
+            elif message["type"] == 'image':
+                self.record_goal_response(message)
+            elif emorec.is_emorec_response(message):
+                self.record_emorec_response(message)
             else:
                 self.send_text(context, 'meow')
 
