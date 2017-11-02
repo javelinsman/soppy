@@ -185,8 +185,9 @@ class ModuleNalidaClassicSecond(Module):
         self.db.lpush(key, json.dumps([text, '']))
         target_chat = self.session.target_chat(self.user.session(context))
         sharing_message = sr.EMOREC_SHARING_MESSAGE % (self.user.nick(context), text)
-        self.send_image({"chat_id":target_chat}, sharing_message)
-        self.send_text(context, sr.ASK_EMOTION_DETAIL)
+        self.send_text({"chat_id":target_chat}, sharing_message)
+        reactive_sentence = emorec.REPLYS[emorec.EMOTIONS.index(text)]
+        self.send_text(context, reactive_sentence + ' ' + sr.ASK_EMOTION_DETAIL)
         self.set_state(context, 'asked_emotion_detail')
 
     def operator(self, message):
@@ -206,10 +207,10 @@ class ModuleNalidaClassicSecond(Module):
             state = self.get_state(context)
             if emorec.is_emorec_response(message):
                 self.record_emorec_response(message)
-            elif state is not None:
-                getattr(self, 'state_' + state)(message)
             elif message["type"] == 'image':
                 self.record_goal_response(message)
+            elif state is not None:
+                getattr(self, 'state_' + state)(message)
             else:
                 self.send_text(context, 'meow')
 
