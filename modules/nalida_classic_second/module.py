@@ -65,7 +65,6 @@ class ModuleNalidaClassicSecond(Module):
         elif message["type"] == 'text' and self.is_registration_key(message["data"]["text"]):
             self.register_user(context, message["data"]["text"])
             self.send_text(context, sr.REGISTER_COMPLETE)
-            self.state_machine.set_state(context, 'WAITING_INPUT')
         elif self.membership_test(context):
             self.send_text(context, "I know you")
         else:
