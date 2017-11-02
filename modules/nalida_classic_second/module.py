@@ -126,6 +126,9 @@ class ModuleNalidaClassicSecond(Module):
 
     def state_asked_goal(self, message):
         "response should be the description of the goal in one message"
+        """TODO: to prevent emorec response being recorded, branch order
+        in operate function is adjusted. It is error-prone."""
+
         context = message["context"]
         if message["type"] == 'text':
             text = message["data"]["text"]
@@ -141,15 +144,23 @@ class ModuleNalidaClassicSecond(Module):
         pass
 
     def state_asked_goal_detail(self, message):
-        self.send_text(message["context"], 'good')
-        self.set_state(message["context"], '')
+        "if response is text, record it as goal detail"
+        context = message["context"]
+        if message["type"] == 'text':
+            key = self.key_list_goal_achievement % self.serialize_context(context)
+            recent_response = json.loads(self.db.lpop(key))
+            recent_response[1] = message["data"]["text"]
+            self.db.lpush(key, json.dumps(recent_response))
+            self.send_text(context, sr.RESPONSE_RECORDED)
+        else:
+            self.set_state(context, '')
 
     def record_goal_response(self, message):
         "record daily goal achievement and share it"
         context = message["context"]
         key = self.key_list_goal_achievement % self.serialize_context(context)
         file_id = message["data"]["file_ids"][-1]
-        self.db.rpush(key, json.dumps((file_id, '')))
+        self.db.lpush(key, json.dumps([file_id, '']))
         target_chat = self.session.target_chat(self.user.session(context))
         logging.debug('session_name is %s', self.user.session(context))
         logging.debug('target_chat is %s', target_chat)
@@ -158,6 +169,7 @@ class ModuleNalidaClassicSecond(Module):
         self.set_state(context, 'asked_goal_detail')
 
     def record_emorec_response(self, message):
+        "record emorec response and share it"
         pass
 
     def operator(self, message):
@@ -175,12 +187,12 @@ class ModuleNalidaClassicSecond(Module):
                                    (session_name, text.split()[-1]))
         elif self.membership_test(context):
             state = self.get_state(context)
-            if state is not None:
+            if emorec.is_emorec_response(message):
+                self.record_emorec_response(message)
+            elif state is not None:
                 getattr(self, 'state_' + state)(message)
             elif message["type"] == 'image':
                 self.record_goal_response(message)
-            elif emorec.is_emorec_response(message):
-                self.record_emorec_response(message)
             else:
                 self.send_text(context, 'meow')
 

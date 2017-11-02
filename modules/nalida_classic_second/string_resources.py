@@ -19,3 +19,5 @@ INSTRUCTIONS_FOR_EMOREC = '그리고 오늘부터 매일 3번씩 감정을 물�
 
 COMMAND_MAKE_SESSION = '세션등록'
 ASK_GOAL_ACHIEVEMENT_DETAIL = '굳. 소감 좀 자세히 말해줄래?'
+
+RESPONSE_RECORDED = '응답이 기록되었어요. 감사합니다!'
