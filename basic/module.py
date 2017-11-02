@@ -66,6 +66,16 @@ class Module(threading.Thread):
             }
         self.send(message)
 
+    def send_image(self, context, file_id):
+        "send image to context"
+        message = {
+            "type": 'image',
+            "context": context,
+            "data": {"file_ids":[file_id]}
+            }
+        self.send(message)
+
+
     def shutdown(self):
         "this thread will be terminated soon when called"
         self.__exit = True
