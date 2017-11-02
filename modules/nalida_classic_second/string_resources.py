@@ -1,6 +1,11 @@
 """
 String Resourses for NalidaClassicSecond module
+
+string '$$$' is reserved here as a delimiter
+which seperates the text into several messages.
+
 """
+
 COMMAND_PUBLISH_REGISTRATION_KEY = '등록키발급'
 REGISTER_COMPLETE = '등록이 완료되었습니다.'
 ASK_NICKNAME = '별명이 뭐예요?'

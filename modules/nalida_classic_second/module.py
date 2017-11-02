@@ -33,6 +33,11 @@ class ModuleNalidaClassicSecond(Module):
         self.key_context_state = 'key-context-state:%s'
         self.key_list_goal_achievement = 'key-list-goal-achievement:%s'
         self.key_list_emorec_response = 'key-emorec-response:%s'
+
+    def send_text(self, context, text):
+        for subtext in text.split('$$$'):
+            super().send_text(context, subtext)
+
     def membership_test(self, context):
         "check if the context is registered for this module"
         return self.db.sismember(self.key_set_registered_users, self.serialize_context(context))
