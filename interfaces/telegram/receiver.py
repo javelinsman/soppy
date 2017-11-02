@@ -9,7 +9,7 @@ import json
 import requests
 import bot_config
 
-from database_wrapper_redis import DatabaseWrapperRedis
+from basic.database_wrapper_redis import DatabaseWrapperRedis
 
 from flask import Flask, request
 

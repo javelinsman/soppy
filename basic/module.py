@@ -9,7 +9,7 @@ import logging
 
 import bot_config
 
-from database_wrapper_redis import DatabaseWrapperRedis
+from basic.database_wrapper_redis import DatabaseWrapperRedis
 
 class Module(threading.Thread):
     """This class defines the skeleton structure of Nalinyang-Twix MODULEs,
@@ -30,8 +30,10 @@ class Module(threading.Thread):
 
     def run(self):
         while not self.__exit:
-            message = self.pubsub.get_message()
-            if message is not None:
+            while True:
+                message = self.pubsub.get_message()
+                if message is None:
+                    break
                 message = json.loads(message["data"].decode('utf-8'))
                 if self.filter(message):
                     self.operator(message)
@@ -44,6 +46,12 @@ class Module(threading.Thread):
             context["chat_id"],
             context["author_id"]
         )
+
+    @staticmethod
+    def parse_context(serialized):
+        "convert serialized context string to context"
+        chat_id, author_id = map(int, serialized.split(':'))
+        return {"chat_id": chat_id, "author_id": author_id}
 
     def send(self, message):
         "broadcast message to sender interfaces"

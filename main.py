@@ -13,15 +13,13 @@ import logging
 import bot_config
 
 # Bot Components
-from interface_telegram_receiver import InterfaceTelegramReceiver
-from interface_telegram_sender import InterfaceTelegramSender
-#from module_echo import ModuleEcho
-from module_nalida_classic_second import ModuleNalidaClassicSecond
-from module_admin import ModuleAdmin
+from interfaces.telegram.receiver import InterfaceTelegramReceiver
+from interfaces.telegram.sender import InterfaceTelegramSender
+from modules.nalida_classic_second.module import ModuleNalidaClassicSecond
 
 
 # Basic Settings for Program
-FORMAT = '[%(levelname)s][%(asctime)s][%(module)s] %(message)s'
+FORMAT = '[%(levelname)s][%(asctime)s][%(pathname)s][%(funcName)s]\n\t%(message)s\n'
 if '--debug' in sys.argv:
     logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 else:
@@ -33,9 +31,7 @@ INTERFACES = {
     "telegram_sender": InterfaceTelegramSender(),
 }
 MODULES = {
-    #"echo": ModuleEcho(),
     "nalida_classic_second": ModuleNalidaClassicSecond(),
-    "admin": ModuleAdmin(),
 }
 
 def start_components():

@@ -12,8 +12,9 @@ import logging
 import string
 import random
 
-from module import Module
-from string_data import StringData
+
+from modules.nalida_classic_second import string_resources as sr
+from basic.module import Module
 
 import bot_config
 
@@ -23,12 +24,6 @@ class ModuleNalidaClassicSecond(Module):
         super().__init__(__name__)
         self.key_set_registered_users = 'set-registered-users'
         self.key_set_registration_keys = 'set-registration-keys'
-        self.string_data = StringData()
-    
-    def get_string(self, name):
-        key = '%s:%s' % (self.module_name, name)
-        return self.string_data.get(key)
-
     def membership_test(self, context):
         "check if the context is registered for this module"
         return self.db.sismember(self.key_set_registered_users, self.serialize_context(context))
@@ -60,15 +55,17 @@ class ModuleNalidaClassicSecond(Module):
             context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN,
             self.membership_test(context),
             message["type"] == 'text' and self.is_registration_key(message["data"]["text"]),
+            #message["type"] == 'tick',
             ))
 
     def operator(self, message):
         context = message["context"]
         if context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN:
             self.send_text(context, self.generate_new_registration_key())
-        if message["type"] == 'text' and self.is_registration_key(message["data"]["text"]):
+        elif message["type"] == 'text' and self.is_registration_key(message["data"]["text"]):
             self.register_user(context, message["data"]["text"])
-            self.send_text(context, self.get_string('REGISTER_COMPLETE'))
+            self.send_text(context, sr.REGISTER_COMPLETE)
+            self.state_machine.set_state(context, 'WAITING_INPUT')
         elif self.membership_test(context):
             self.send_text(context, "I know you")
         else:

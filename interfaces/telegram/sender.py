@@ -11,16 +11,18 @@ from collections import defaultdict
 import requests
 import bot_config
 
-from database_wrapper_redis import DatabaseWrapperRedis
+from basic.database_wrapper_redis import DatabaseWrapperRedis
 
 class InterfaceTelegramSender(threading.Thread):
+    "Interface to send message to Telegram messenger"
     def __init__(self):
         super().__init__()
-        self.db = DatabaseWrapperRedis(host=bot_config.DB_HOST, port=bot_config.DB_PORT, db=bot_config.DB_NUM)
-        self.pubsub = self.db.pubsub(ignore_subscribe_messages=True)
+        self.database = DatabaseWrapperRedis(
+            host=bot_config.DB_HOST, port=bot_config.DB_PORT, db=bot_config.DB_NUM)
+        self.pubsub = self.database.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe('channel-from-module-to-sender')
         self.__exit = False
-        self.q = defaultdict(lambda:queue.Queue())
+        self.message_queues = defaultdict(queue.Queue)
 
     def run(self):
         while not self.__exit:
@@ -30,15 +32,16 @@ class InterfaceTelegramSender(threading.Thread):
                 if message is None:
                     break
                 message = json.loads(message["data"].decode('utf-8'))
-                self.q[message["context"]["chat_id"]].put(message)
+                self.message_queues[message["context"]["chat_id"]].put(message)
             # Secondly, send one message for each chat_id's
-            for chat_id, q in list(self.q.items()):
-                if not q.empty():
-                    message = q.get()
+            for chat_id, message_queue in list(self.message_queues.items()):
+                if not message_queue.empty():
+                    message = message_queue.get()
                     if message["type"] == 'text':
                         self.send_message(chat_id, message["data"]["text"])
                     elif message["type"] == 'markup_text':
-                        self.send_message_with_markup(chat_id, message["data"]["text"], message["data"]["reply_markup"])
+                        self.send_message_with_markup(chat_id, message["data"]["text"],
+                                                      message["data"]["reply_markup"])
                     elif message["type"] == 'image':
                         self.send_image(chat_id, message["data"]["file_ids"][-1])
                     elif message["type"] == 'document':
@@ -47,6 +50,7 @@ class InterfaceTelegramSender(threading.Thread):
             time.sleep(1)
 
     def shutdown(self):
+        "stop the thread when called"
         self.__exit = True
 
     def send_message(self, cid, text):
