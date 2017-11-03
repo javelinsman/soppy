@@ -15,6 +15,7 @@ import bot_config
 # Bot Components
 from interfaces.telegram.receiver import InterfaceTelegramReceiver
 from interfaces.telegram.sender import InterfaceTelegramSender
+from interfaces.timer.timer import Timer
 from modules.nalida_classic_second.module import ModuleNalidaClassicSecond
 
 
@@ -29,6 +30,7 @@ else:
 INTERFACES = {
     "telegram_receiver": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT),
     "telegram_sender": InterfaceTelegramSender(),
+    "timer": Timer(),
 }
 MODULES = {
     "nalida_classic_second": ModuleNalidaClassicSecond(),

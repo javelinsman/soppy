@@ -83,7 +83,7 @@ class ModuleNalidaClassicSecond(Module):
             context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN,
             self.membership_test(context),
             message["type"] == 'text' and self.is_registration_key(message["data"]["text"]),
-            #message["type"] == 'tick',
+            message["type"] == 'timer',
             ))
 
     def state_asked_nick(self, message):
@@ -226,5 +226,9 @@ class ModuleNalidaClassicSecond(Module):
             self.send_text(context, sr.REGISTER_COMPLETE)
             self.send_text(context, sr.ASK_NICKNAME)
             self.set_state(context, 'asked_nick')
+        elif message["type"] == 'timer':
+            current = json.loads(message["data"]["time"])
+            hour, minute, second = map(int, current[3:6])
+            self.send_text({"chat_id": 320330606}, 'Meow for %02d:%02d:%02d' % (hour, minute, second))
         else:
             logging.error('This clause should never be executed!')
