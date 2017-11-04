@@ -185,6 +185,7 @@ class ModuleNalidaClassicSecond(Module):
             return
         info = self.db.get(self.key["temp_goal_response"] % self.serialize_context(context))
         message = json.loads(info)
+
         key = self.key["list_goal_achievement"] % self.serialize_context(context)
         file_id = message["data"]["file_ids"][-1]
         self.db.lpush(key, json.dumps([file_id, '']))
@@ -214,12 +215,29 @@ class ModuleNalidaClassicSecond(Module):
         "if response is text, record it as goal detail"
         context = message["context"]
         if message["type"] == 'text':
+            text = message["data"]["text"]
+            share = True
+            if text.startswith(sr.COMMAND_NOT_TO_SHARE_GOAL):
+                text = text[len(sr.COMMAND_NOT_TO_SHARE_GOAL):].strip()
+                share = False
             key = self.key["list_goal_achievement"] % self.serialize_context(context)
             recent_response = json.loads(self.db.lpop(key))
-            recent_response[1] = message["data"]["text"]
+            recent_response[1] = text
             self.db.lpush(key, json.dumps(recent_response))
-            self.send_text(context, sr.RESPONSE_RECORDED)
-            logging.debug('recent_response: %r', recent_response)
+
+            if share and self.user.session(context) is not None:
+                message_to_share = {
+                    "type": 'text',
+                    "context": None,
+                    "data": {
+                        "text": sr.GOAL_SHARING_DETAILED_MESSAGE %
+                                (self.user.nick(context), message["data"]["text"])
+                        }
+                    }
+                self.session.share_user_response(context, message_to_share)
+                self.send_text(context, sr.GOAL_RESPONSE_RECORDED_AND_SHARED)
+            else:
+                self.send_text(context, sr.GOAL_RESPONSE_RECORDED_BUT_NOT_SHARED)
         self.user.state(context, '')
 
     def emorec_routine(self, message):
