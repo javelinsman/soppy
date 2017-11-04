@@ -19,7 +19,6 @@ class User:
             "session": 'user-session:%s',
             "state": 'user-state:%s',
             "emorec_time": 'user-emorec-time:%s',
-            "emorec_block": 'user-emorec-block:%s',
             "registered_users": 'user-registered-users',
             "registration_keys": 'user-registration-keys',
             "target_chat": 'user-target-chat:%s',
@@ -125,27 +124,18 @@ class User:
                 self.db.set(key, json.dumps([when, hour, minute]))
             elif result[0] == 'night':
                 hour = random.randint(8, 9)
-                self.db.set(key, json.dumps(['morning', hour, minute]))
+                when = 'morning'
             elif result[0] == 'morning':
                 hour = random.randint(14, 15)
-                self.db.set(key, json.dumps(['noon', hour, minute]))
+                when = 'noon'
             elif result[0] == 'noon':
                 hour = random.randint(20, 21)
-                self.db.set(key, json.dumps(['night', hour, minute]))
+                when = 'night'
+            self.db.set(key, json.dumps([when, hour, minute]))
         else:
             if result is None:
                 return [-1, -1]
             return result[1:]
-
-    def emorec_block(self, context, block=False):
-        "if the user is blocked for emorec response"
-        serialized = Module.serialize_context(context)
-        key = self.key["emorec_block"] % serialized
-        if block:
-            self.db.set(key, 1)
-            self.db.expire(key, 30 * 60)
-        else:
-            return self.db.get(key) is not None
 
     def target_chat(self, context, value=None):
         "getset for target chat"

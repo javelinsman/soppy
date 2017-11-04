@@ -218,24 +218,19 @@ class ModuleNalidaClassicSecond(Module):
         datetime_now = datetime.datetime(100, 1, 1, hour, minute, 0)
         for context in self.user.list_of_users():
             b_hour, b_minute = self.user.emorec_time(context)
-            logging.debug('%r:%r', b_hour, b_minute)
             if b_hour == -1:
                 continue
             datetime_baseline = datetime.datetime(100, 1, 1, b_hour, b_minute, 0)
-            elapsed_seconds = (datetime_now - datetime_baseline).seconds
-            if datetime_baseline < datetime_now and elapsed_seconds <= 600:
-                if not self.user.emorec_block(context):
-                    logging.debug('not blocked')
-                    self.send({
-                        "type": 'markup_text',
-                        "context": context,
-                        "data": {
-                            "text": sr.ASK_EMOTION,
-                            "reply_markup": emorec.KEYBOARD,
-                            }
-                        })
-                    self.user.emorec_time(context, True)
-                    self.user.emorec_block(context, True)
+            if datetime_baseline <= datetime_now:
+                self.send({
+                    "type": 'markup_text',
+                    "context": context,
+                    "data": {
+                        "text": sr.ASK_EMOTION,
+                        "reply_markup": emorec.KEYBOARD,
+                        }
+                    })
+                self.user.emorec_time(context, True)
 
 
     def operator(self, message):
