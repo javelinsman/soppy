@@ -27,9 +27,11 @@ class ModuleNalidaClassicSecond(Module):
         super().__init__(__name__)
         self.user = User(self)
         self.session = Session(self)
-        self.key_context_state = 'key-context-state:%s'
-        self.key_list_goal_achievement = 'key-list-goal-achievement:%s'
-        self.key_list_emorec_response = 'key-emorec-response:%s'
+        self.key = {
+            "list_goal_achievement": 'key-list-goal-achievement:%s',
+            "list_emorec_response": 'key-emorec-response:%s',
+            "temp_goal_response": 'key-temp-goal-response:%s',
+            }
 
     def send_text(self, context, text):
         for subtext in text.split('$$$'):
@@ -109,7 +111,7 @@ class ModuleNalidaClassicSecond(Module):
     def record_emorec_response(self, message):
         "record emorec response and share it"
         context = message["context"]
-        key = self.key_list_emorec_response % self.serialize_context(context)
+        key = self.key["list_emorec_response"] % self.serialize_context(context)
         text = message["data"]["text"]
         self.db.lpush(key, json.dumps([text, '']))
         reactive_sentence = emorec.REPLYS[emorec.EMOTIONS.index(text)]
@@ -129,7 +131,7 @@ class ModuleNalidaClassicSecond(Module):
         "record emotion response detail"
         context = message["context"]
         if message["type"] == 'text':
-            key = self.key_list_emorec_response % self.serialize_context(context)
+            key = self.key["list_emorec_response"] % self.serialize_context(context)
             text = message["data"]["text"]
             share = True
             if text.startswith(sr.COMMAND_NOT_TO_SHARE_EMOTION):
@@ -156,9 +158,11 @@ class ModuleNalidaClassicSecond(Module):
     def record_goal_response(self, message):
         "send confirmation message"
         context = message["context"]
-        """
-        self.send_text(context, sr.ASK_GOAL_RESPONSE_CONFIRMATION)
         self.user.state(context, 'asked_goal_confirmation')
+        self.db.set(self.key["temp_goal_response"] % self.serialize_context(context),
+                    json.dumps(message))
+        self.send_text(context, sr.ASK_GOAL_RESPONSE_CONFIRMATION)
+
 
     def state_asked_goal_confirmation(self, message):
         "record daily goal achievement and share it"
@@ -167,8 +171,9 @@ class ModuleNalidaClassicSecond(Module):
             self.send_text(context, sr.REQUEST_ANOTHER_PICTURE)
             self.user.state(context, '')
             return
-        """
-        key = self.key_list_goal_achievement % self.serialize_context(context)
+        info = self.db.get(self.key["temp_goal_response"] % self.serialize_context(context))
+        message = json.loads(info)
+        key = self.key["list_goal_achievement"] % self.serialize_context(context)
         file_id = message["data"]["file_ids"][-1]
         self.db.lpush(key, json.dumps([file_id, '']))
         self.send_text(context, sr.ASK_GOAL_ACHIEVEMENT_DETAIL)
@@ -198,7 +203,7 @@ class ModuleNalidaClassicSecond(Module):
         in operate function is adjusted. It is error-prone."""
         context = message["context"]
         if message["type"] == 'text':
-            key = self.key_list_goal_achievement % self.serialize_context(context)
+            key = self.key["list_goal_achievement"] % self.serialize_context(context)
             recent_response = json.loads(self.db.lpop(key))
             recent_response[1] = message["data"]["text"]
             self.db.lpush(key, json.dumps(recent_response))
