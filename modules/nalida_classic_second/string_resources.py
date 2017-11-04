@@ -32,15 +32,18 @@ GOAL_DESCRIPTION_SUBMITTED = '좋은 목표 설명 잘 들었어요!'
 INSTRUCTIONS_FOR_GOAL = '이제부터 매일 사진을 올리시면 그것이 반영될 거예요'
 INSTRUCTIONS_FOR_EMOREC = '그리고 오늘부터 매일 3번씩 감정을 물어볼 거예요'
 
-GOAL_SHARING_MESSAGE = '%s님의 목표 인증샷'
+# 목표 인증샷
+GOAL_SHARING_MESSAGE = '%s님의 목표 인증샷\n[%s]'
 ASK_GOAL_ACHIEVEMENT_DETAIL = '굳. 소감 좀 자세히 말해줄래?'
 GOAL_SHARING_DETAILED_MESSAGE = '%s님의 목표 설명: %s'
 COMMAND_NOT_TO_SHARE_GOAL = '비공개'
 GOAL_RESPONSE_RECORDED_AND_SHARED = '응답이 기록되고 공유되었어요. 감사합니다!'
 GOAL_RESPONSE_RECORDED_BUT_NOT_SHARED = '응답이 기록되고 공유는 되지 않았어요. 감사합니다!'
+ASK_GOAL_RESPONSE_CONFIRMATION = '이 사진이 오늘의 목표 인증샷이 맞나요?'
+RESPONSE_GOAL_YES = '네'
+REQUEST_ANOTHER_PICTURE = '그럼 나중에 다시 올려주세요!'
 
-RESPONSE_RECORDED = '응답이 기록되었어요. 감사합니다!'
-
+# 감정기록
 ASK_EMOTION = '지금은 무슨 감정을 느끼고 있나요?\n메세지를 늦게 보았어도 현재의 상태를 기록해주세요.'
 ASK_EMOTION_DETAIL = '감정을 더 자세히 알려주세요.'
 EMOREC_SHARING_MESSAGE = '누군가의 현재 감정: %s'
@@ -49,11 +52,11 @@ COMMAND_NOT_TO_SHARE_EMOTION = '비공개'
 EMOREC_RESPONSE_RECORDED_AND_SHARED = '응답이 기록되고 공유되었어요. 감사합니다!'
 EMOREC_RESPONSE_RECORDED_BUT_NOT_SHARED = '응답이 기록되고 공유는 되지 않았어요. 감사합니다!'
 
-ASK_GOAL_RESPONSE_CONFIRMATION = '이 사진이 오늘의 목표 인증샷이 맞나요?'
-RESPONSE_GOAL_YES = '네'
-REQUEST_ANOTHER_PICTURE = '그럼 나중에 다시 올려주세요!'
-
+# 세션등록
 ERROR_MAKE_SESSION_INVALID_CONTEXT = '잘못된 아이디가 포함되어 있습니다. 다시 확인해주세요.'
 ERROR_MAKE_SESSION_NO_TARGET_CHAT = '중계방이 등록되지 않은 사용자가 있습니다. 다시 확인해주세요.'
 COMMAND_PREFIX_REGISTER_BROADCASTING_ROOM = 'REGBCROOM:'
 REGISTERED_AS_BROADCASTING_ROOM = '이 곳이 %s님의 중계방으로 등록되었습니다. 감사합니다.'
+
+# 일반
+RESPONSE_RECORDED = '응답이 기록되었어요. 감사합니다!'

@@ -197,7 +197,8 @@ class ModuleNalidaClassicSecond(Module):
                 "type": 'text',
                 "context": None,
                 "data": {
-                    "text": sr.GOAL_SHARING_MESSAGE % self.user.nick(context),
+                    "text": sr.GOAL_SHARING_MESSAGE %
+                            (self.user.nick(context), self.user.goal_name(context))
                     }
                 }
             self.session.share_user_response(context, message_to_share)
