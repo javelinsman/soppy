@@ -10,6 +10,7 @@ This module contains
 
 import logging
 import json
+import datetime
 
 
 from modules.nalida_classic_second import string_resources as sr
@@ -98,6 +99,7 @@ class ModuleNalidaClassicSecond(Module):
             self.send_text(context, sr.GOAL_SUBMITTED)
             self.send_text(context, sr.INSTRUCTIONS_FOR_GOAL)
             self.send_text(context, sr.INSTRUCTIONS_FOR_EMOREC)
+            self.user.emorec_time(context, True)
             self.user.state(context, '')
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
@@ -154,6 +156,32 @@ class ModuleNalidaClassicSecond(Module):
         self.send_text(context, reactive_sentence + ' ' + sr.ASK_EMOTION_DETAIL)
         self.user.state(context, 'asked_emotion_detail')
 
+    def emorec_routine(self, message):
+        "check if it has to ask emotions for some user"
+        current = json.loads(message["data"]["time"])
+        hour, minute = map(int, current[3:5])
+        datetime_now = datetime.datetime(100, 1, 1, hour, minute, 0)
+        for context in self.user.list_of_users():
+            b_hour, b_minute = self.user.emorec_time(context)
+            if b_hour == -1:
+                continue
+            datetime_baseline = datetime.datetime(100, 1, 1, b_hour, b_minute, 0)
+            elapsed_seconds = (datetime_now - datetime_baseline).seconds
+            if datetime_baseline < datetime_now and elapsed_seconds <= 600:
+                if not self.user.emorec_block(context):
+                    logging.debug('not blocked')
+                    self.send({
+                        "type": 'markup_text',
+                        "context": context,
+                        "data": {
+                            "text": sr.ASK_EMOTION,
+                            "reply_markup": emorec.KEYBOARD,
+                            }
+                        })
+                    self.user.emorec_time(context, True)
+                    self.user.emorec_block(context, True)
+
+
     def operator(self, message):
         context = message["context"]
         if context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN:
@@ -184,8 +212,7 @@ class ModuleNalidaClassicSecond(Module):
             self.send_text(context, sr.ASK_NICKNAME)
             self.user.state(context, 'asked_nick')
         elif message["type"] == 'timer':
-            current = json.loads(message["data"]["time"])
-            hour, minute, second = map(int, current[3:6])
-            self.send_text({"chat_id": 320330606}, 'Meow for %02d:%02d:%02d' % (hour, minute, second))
+            self.emorec_routine(message)
+
         else:
             logging.error('This clause should never be executed!')

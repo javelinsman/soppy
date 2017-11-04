@@ -4,6 +4,7 @@ import logging
 import json
 import random
 import string
+import time
 
 from basic.module import Module
 
@@ -18,6 +19,7 @@ class User:
             "session": 'user-session:%s',
             "state": 'user-state:%s',
             "emorec_time": 'user-emorec-time:%s',
+            "emorec_block": 'user-emorec-block:%s',
             "registered_users": 'user-registered-users',
             "registration_keys": 'user-registration-keys',
             }
@@ -30,6 +32,11 @@ class User:
         "register the context as a user of this module"
         self.db.sadd(self.key["registered_users"], Module.serialize_context(context))
         self.db.srem(self.key["registration_keys"], registration_key)
+
+    def list_of_users(self):
+        "returns the list of registrated users"
+        users = self.db.smembers(self.key["registered_users"])
+        return list(map(Module.parse_context, users))
 
     def generate_new_registration_key(self):
         "make new key, insert to db, and return it"
@@ -96,21 +103,45 @@ class User:
             logging.debug('context is %s, session set to %s', serialized, value)
             self.db.set(key, value)
 
-    def emorec_time(self, context, set_value=None):
+    def emorec_time(self, context, set_next=False):
         "get/set of current/next emorec time"
         serialized = Module.serialize_context(context)
         key = self.key["emorec_time"] % serialized
-        if set_value is None:
-            return json.loads(self.db.get(key))
-        else:
-            if set_value == 'morning':
-                hour = random.randint(8, 9)
-            elif set_value == 'noon':
-                hour = random.randint(14, 15)
-            elif set_value == 'night':
-                hour = random.randint(20, 21)
-            else:
-                return None
+        result = self.db.get(key)
+        result = json.loads(result) if result is not None else result
+        if set_next:
             minute = random.randint(0, 59)
-            self.db.set(key, json.dumps([hour, minute]))
-            return [hour, minute]
+            if result is None:
+                current = time.localtime()
+                hour = current.tm_hour
+                minute = current.tm_min
+                if hour <= 9:
+                    when = 'morning'
+                elif hour <= 15:
+                    when = 'noon'
+                else:
+                    when = 'night'
+                self.db.set(key, json.dumps([when, hour, minute]))
+            elif result[0] == 'night':
+                hour = random.randint(8, 9)
+                self.db.set(key, json.dumps(['morning', hour, minute]))
+            elif result[0] == 'morning':
+                hour = random.randint(14, 15)
+                self.db.set(key, json.dumps(['noon', hour, minute]))
+            elif result[0] == 'noon':
+                hour = random.randint(20, 21)
+                self.db.set(key, json.dumps(['night', hour, minute]))
+        else:
+            if result is None:
+                return [-1, -1]
+            return result[1:]
+
+    def emorec_block(self, context, block=False):
+        "if the user is blocked for emorec response"
+        serialized = Module.serialize_context(context)
+        key = self.key["emorec_block"] % serialized
+        if block:
+            self.db.set(key, 1)
+            self.db.expire(key, 30 * 60)
+        else:
+            return self.db.get(key) is not None
