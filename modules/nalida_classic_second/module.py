@@ -150,7 +150,7 @@ class ModuleNalidaClassicSecond(Module):
         text = message["data"]["text"]
         self.db.lpush(key, json.dumps([text, '']))
         target_chat = self.session.target_chat(self.user.session(context))
-        sharing_message = sr.EMOREC_SHARING_MESSAGE % (self.user.nick(context), text)
+        sharing_message = sr.EMOREC_SHARING_MESSAGE % text
         self.send_text({"chat_id":target_chat}, sharing_message)
         reactive_sentence = emorec.REPLYS[emorec.EMOTIONS.index(text)]
         self.send_text(context, reactive_sentence + ' ' + sr.ASK_EMOTION_DETAIL)
