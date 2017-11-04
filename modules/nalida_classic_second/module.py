@@ -9,8 +9,6 @@ This module contains
 """
 
 import logging
-import string
-import random
 import json
 
 
@@ -28,8 +26,6 @@ class ModuleNalidaClassicSecond(Module):
         super().__init__(__name__)
         self.user = User(self.db)
         self.session = Session(self.db, self.user)
-        self.key_set_registered_users = 'set-registered-users'
-        self.key_set_registration_keys = 'set-registration-keys'
         self.key_context_state = 'key-context-state:%s'
         self.key_list_goal_achievement = 'key-list-goal-achievement:%s'
         self.key_list_emorec_response = 'key-emorec-response:%s'
@@ -38,51 +34,12 @@ class ModuleNalidaClassicSecond(Module):
         for subtext in text.split('$$$'):
             super().send_text(context, subtext)
 
-    def membership_test(self, context):
-        "check if the context is registered for this module"
-        return self.db.sismember(self.key_set_registered_users, self.serialize_context(context))
-
-    def is_registration_key(self, key):
-        "check if the key is the registration key"
-        return self.db.sismember(self.key_set_registration_keys, key)
-
-    def register_user(self, context, registration_key):
-        "register the context as a user of this module"
-        self.db.sadd(self.key_set_registered_users, self.serialize_context(context))
-        self.db.srem(self.key_set_registration_keys, registration_key)
-
-    def generate_new_registration_key(self):
-        "make new key, insert to db, and return it"
-        while True:
-            new_key = '%s:%s' % (
-                self.module_name,
-                ''.join([random.choice(string.ascii_letters) for _ in range(25)])
-                )
-            if not self.is_registration_key(new_key):
-                break
-        self.db.sadd(self.key_set_registration_keys, new_key)
-        return new_key
-
-    def set_state(self, context, state):
-        "set user(context)'s state"
-        serialized = self.serialize_context(context)
-        state_key = self.key_context_state % serialized
-        self.db.set(state_key, state)
-
-    def get_state(self, context):
-        "get user(context)'s state"
-        serialized = self.serialize_context(context)
-        state_key = self.key_context_state % serialized
-        result = self.db.get(state_key)
-        result = None if result == '' else result
-        return result
-
     def filter(self, message):
         context = message["context"]
         return any((
             context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN,
-            self.membership_test(context),
-            message["type"] == 'text' and self.is_registration_key(message["data"]["text"]),
+            self.user.membership_test(context),
+            message["type"] == 'text' and self.user.is_registration_key(message["data"]["text"]),
             message["type"] == 'timer',
             ))
 
@@ -94,7 +51,7 @@ class ModuleNalidaClassicSecond(Module):
             self.send_text(context, sr.CONFIRM_NICKNAME % text)
             serialized = self.serialize_context(context)
             self.db.set('candidate-nickname:%s' % serialized, text)
-            self.set_state(context, 'asked_nick_confirmation')
+            self.user.state(context, 'asked_nick_confirmation')
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
 
@@ -110,10 +67,10 @@ class ModuleNalidaClassicSecond(Module):
                 self.user.nick(context, nickname)
                 self.send_text(context, sr.NICKNAME_SUBMITTED % nickname)
                 self.send_text(context, sr.ASK_EXPLANATION_FOR_NICKNAME)
-                self.set_state(context, 'asked_nick_explanation')
+                self.user.state(context, 'asked_nick_explanation')
             elif text == sr.RESPONSE_NICKNAME_NO:
                 self.send_text(context, sr.ASK_NICKNAME_AGAIN)
-                self.set_state(context, 'asked_nick')
+                self.user.state(context, 'asked_nick')
             else:
                 self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
         else:
@@ -127,7 +84,7 @@ class ModuleNalidaClassicSecond(Module):
             self.user.explanation(context, text)
             self.send_text(context, sr.EXPLANATION_SUBMITTED)
             self.send_text(context, sr.ASK_GOAL)
-            self.set_state(context, 'asked_goal')
+            self.user.state(context, 'asked_goal')
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
 
@@ -141,7 +98,7 @@ class ModuleNalidaClassicSecond(Module):
             self.send_text(context, sr.GOAL_SUBMITTED)
             self.send_text(context, sr.INSTRUCTIONS_FOR_GOAL)
             self.send_text(context, sr.INSTRUCTIONS_FOR_EMOREC)
-            self.set_state(context, '')
+            self.user.state(context, '')
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
 
@@ -155,7 +112,7 @@ class ModuleNalidaClassicSecond(Module):
             self.db.lpush(key, json.dumps(recent_response))
             self.send_text(context, sr.RESPONSE_RECORDED)
             logging.debug('recent_response: %r', recent_response)
-        self.set_state(context, '')
+        self.user.state(context, '')
 
     def state_asked_goal_detail(self, message):
         "if response is text, record it as goal detail"
@@ -169,7 +126,7 @@ class ModuleNalidaClassicSecond(Module):
             self.db.lpush(key, json.dumps(recent_response))
             self.send_text(context, sr.RESPONSE_RECORDED)
             logging.debug('recent_response: %r', recent_response)
-        self.set_state(context, '')
+        self.user.state(context, '')
 
     def record_goal_response(self, message):
         "record daily goal achievement and share it"
@@ -182,7 +139,7 @@ class ModuleNalidaClassicSecond(Module):
         self.send_text({"chat_id":target_chat}, sharing_message)
         self.send_image({"chat_id":target_chat}, file_id)
         self.send_text(context, sr.ASK_GOAL_ACHIEVEMENT_DETAIL)
-        self.set_state(context, 'asked_goal_detail')
+        self.user.state(context, 'asked_goal_detail')
 
     def record_emorec_response(self, message):
         "record emorec response and share it"
@@ -195,7 +152,7 @@ class ModuleNalidaClassicSecond(Module):
         self.send_text({"chat_id":target_chat}, sharing_message)
         reactive_sentence = emorec.REPLYS[emorec.EMOTIONS.index(text)]
         self.send_text(context, reactive_sentence + ' ' + sr.ASK_EMOTION_DETAIL)
-        self.set_state(context, 'asked_emotion_detail')
+        self.user.state(context, 'asked_emotion_detail')
 
     def operator(self, message):
         context = message["context"]
@@ -203,15 +160,15 @@ class ModuleNalidaClassicSecond(Module):
             if message["type"] == 'text':
                 text = message["data"]["text"]
                 if text == sr.COMMAND_PUBLISH_REGISTRATION_KEY:
-                    self.send_text(context, self.generate_new_registration_key())
+                    self.send_text(context, self.user.generate_new_registration_key())
                 elif text.split()[0] == sr.COMMAND_MAKE_SESSION:
                     session_name = self.session.create(
                         list(map(self.parse_context, text.split()[1:-1])))
                     self.session.target_chat(session_name, text.split()[-1])
                     self.send_text(context, 'created session: %s, target chat is %s' %
                                    (session_name, text.split()[-1]))
-        elif self.membership_test(context):
-            state = self.get_state(context)
+        elif self.user.membership_test(context):
+            state = self.user.state(context)
             if emorec.is_emorec_response(message):
                 self.record_emorec_response(message)
             elif message["type"] == 'image':
@@ -221,11 +178,11 @@ class ModuleNalidaClassicSecond(Module):
             else:
                 self.send_text(context, 'meow')
 
-        elif message["type"] == 'text' and self.is_registration_key(message["data"]["text"]):
-            self.register_user(context, message["data"]["text"])
+        elif message["type"] == 'text' and self.user.is_registration_key(message["data"]["text"]):
+            self.user.register_user(context, message["data"]["text"])
             self.send_text(context, sr.REGISTER_COMPLETE)
             self.send_text(context, sr.ASK_NICKNAME)
-            self.set_state(context, 'asked_nick')
+            self.user.state(context, 'asked_nick')
         elif message["type"] == 'timer':
             current = json.loads(message["data"]["time"])
             hour, minute, second = map(int, current[3:6])
