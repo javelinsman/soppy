@@ -34,6 +34,12 @@ GOAL_SHARING_MESSAGE = '%s님의 목표 인증샷'
 ASK_GOAL_ACHIEVEMENT_DETAIL = '굳. 소감 좀 자세히 말해줄래?'
 
 RESPONSE_RECORDED = '응답이 기록되었어요. 감사합니다!'
-EMOREC_SHARING_MESSAGE = '누군가의 현재 감정: %s'
+
 ASK_EMOTION = '지금은 무슨 감정을 느끼고 있나요?\n메세지를 늦게 보았어도 현재의 상태를 기록해주세요.'
 ASK_EMOTION_DETAIL = '감정을 더 자세히 알려주세요.'
+EMOREC_SHARING_MESSAGE = '누군가의 현재 감정: %s'
+EMOREC_SHARING_DETAILED_MESSAGE = '%s'
+COMMAND_NOT_TO_SHARE_EMOTION = '비공개'
+
+EMOREC_RESPONSE_RECORDED_AND_SHARED = '응답이 기록되고 공유되었어요. 감사합니다!'
+EMOREC_RESPONSE_RECORDED_BUT_NOT_SHARED = '응답이 기록되고 공유는 되지 않았어요. 감사합니다!'

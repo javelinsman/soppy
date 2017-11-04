@@ -109,11 +109,23 @@ class ModuleNalidaClassicSecond(Module):
         context = message["context"]
         if message["type"] == 'text':
             key = self.key_list_emorec_response % self.serialize_context(context)
+            text = message["data"]["text"]
+            share = True
+            if text.startswith(sr.COMMAND_NOT_TO_SHARE_EMOTION):
+                text = text[len(sr.COMMAND_NOT_TO_SHARE_EMOTION):].strip()
+                share = False
             recent_response = json.loads(self.db.lpop(key))
             recent_response[1] = message["data"]["text"]
             self.db.lpush(key, json.dumps(recent_response))
-            self.send_text(context, sr.RESPONSE_RECORDED)
-            logging.debug('recent_response: %r', recent_response)
+            if share:
+                target_chat = self.session.target_chat(self.user.session(context))
+                if target_chat is not None:
+                    sharing_message = sr.EMOREC_SHARING_DETAILED_MESSAGE % text
+                    self.send_text({"chat_id":target_chat}, sharing_message)
+                self.send_text(context, sr.EMOREC_RESPONSE_RECORDED_AND_SHARED)
+            else:
+                self.send_text(context, sr.EMOREC_RESPONSE_RECORDED_BUT_NOT_SHARED)
+
         self.user.state(context, '')
 
     def state_asked_goal_detail(self, message):
@@ -149,12 +161,15 @@ class ModuleNalidaClassicSecond(Module):
         key = self.key_list_emorec_response % self.serialize_context(context)
         text = message["data"]["text"]
         self.db.lpush(key, json.dumps([text, '']))
-        target_chat = self.session.target_chat(self.user.session(context))
-        sharing_message = sr.EMOREC_SHARING_MESSAGE % text
-        self.send_text({"chat_id":target_chat}, sharing_message)
         reactive_sentence = emorec.REPLYS[emorec.EMOTIONS.index(text)]
         self.send_text(context, reactive_sentence + ' ' + sr.ASK_EMOTION_DETAIL)
         self.user.state(context, 'asked_emotion_detail')
+
+        # sharing the response
+        target_chat = self.session.target_chat(self.user.session(context))
+        if target_chat is not None:
+            sharing_message = sr.EMOREC_SHARING_MESSAGE % text
+            self.send_text({"chat_id":target_chat}, sharing_message)
 
     def emorec_routine(self, message):
         "check if it has to ask emotions for some user"
@@ -163,6 +178,7 @@ class ModuleNalidaClassicSecond(Module):
         datetime_now = datetime.datetime(100, 1, 1, hour, minute, 0)
         for context in self.user.list_of_users():
             b_hour, b_minute = self.user.emorec_time(context)
+            logging.debug('%r:%r', b_hour, b_minute)
             if b_hour == -1:
                 continue
             datetime_baseline = datetime.datetime(100, 1, 1, b_hour, b_minute, 0)
