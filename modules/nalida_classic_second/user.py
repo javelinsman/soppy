@@ -14,7 +14,8 @@ class User:
         self.db = parent.db #pylint: disable=invalid-name
         self.key = {
             "nickname": 'user-key-nickname:%s',
-            "goal": 'user-goal:%s',
+            "goal_name": 'user-goal-name:%s',
+            "goal_description": 'user-goal-description:%s',
             "explanation": 'user-explanation:%s',
             "session": 'user-session:%s',
             "state": 'user-state:%s',
@@ -73,10 +74,19 @@ class User:
         else:
             self.db.set(key, value)
 
-    def goal(self, context, value=None):
+    def goal_name(self, context, value=None):
         "getset of goal"
         serialized = Module.serialize_context(context)
-        key = self.key["goal"] % serialized
+        key = self.key["goal_name"] % serialized
+        if value is None:
+            return self.db.get(key)
+        else:
+            self.db.set(key, value)
+
+    def goal_description(self, context, value=None):
+        "getset of goal"
+        serialized = Module.serialize_context(context)
+        key = self.key["goal_description"] % serialized
         if value is None:
             return self.db.get(key)
         else:

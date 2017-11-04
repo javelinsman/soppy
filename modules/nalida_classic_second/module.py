@@ -88,19 +88,30 @@ class ModuleNalidaClassicSecond(Module):
             text = message["data"]["text"]
             self.user.explanation(context, text)
             self.send_text(context, sr.EXPLANATION_SUBMITTED)
-            self.send_text(context, sr.ASK_GOAL)
-            self.user.state(context, 'asked_goal')
+            self.send_text(context, sr.ASK_GOAL_NAME)
+            self.user.state(context, 'asked_goal_name')
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
 
-    def state_asked_goal(self, message):
-        "response should be the description of the goal in one message"
-
+    def state_asked_goal_name(self, message):
+        "response should be a name of the goal"
         context = message["context"]
         if message["type"] == 'text':
             text = message["data"]["text"]
-            self.user.goal(context, text)
-            self.send_text(context, sr.GOAL_SUBMITTED)
+            self.user.goal_name(context, text)
+            self.send_text(context, sr.GOAL_NAME_SUBMITTED)
+            self.send_text(context, sr.ASK_GOAL_DESCRIPTION)
+            self.user.state(context, 'asked_goal_description')
+        else:
+            self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
+
+    def state_asked_goal_description(self, message):
+        "response should be the description of the goal in one message"
+        context = message["context"]
+        if message["type"] == 'text':
+            text = message["data"]["text"]
+            self.user.goal_description(context, text)
+            self.send_text(context, sr.GOAL_DESCRIPTION_SUBMITTED)
             self.send_text(context, sr.INSTRUCTIONS_FOR_GOAL)
             self.send_text(context, sr.INSTRUCTIONS_FOR_EMOREC)
             self.user.emorec_time(context, True)
@@ -117,7 +128,8 @@ class ModuleNalidaClassicSecond(Module):
         reactive_sentence = emorec.REPLYS[emorec.EMOTIONS.index(text)]
         self.send_text(context, reactive_sentence + ' ' + sr.ASK_EMOTION_DETAIL)
         self.user.state(context, 'asked_emotion_detail')
-        # sharing the response
+        if self.user.session(context) is None:
+            return
         message_to_share = {
             "type": 'text',
             "context": None,
@@ -140,7 +152,7 @@ class ModuleNalidaClassicSecond(Module):
             recent_response = json.loads(self.db.lpop(key))
             recent_response[1] = message["data"]["text"]
             self.db.lpush(key, json.dumps(recent_response))
-            if share:
+            if share and self.user.session(context) is not None:
                 message_to_share = {
                     "type": 'text',
                     "context": None,
@@ -179,28 +191,27 @@ class ModuleNalidaClassicSecond(Module):
         self.send_text(context, sr.ASK_GOAL_ACHIEVEMENT_DETAIL)
         self.user.state(context, 'asked_goal_detail')
 
-        message_to_share = {
-            "type": 'text',
-            "context": None,
-            "data": {
-                "text": sr.GOAL_SHARING_MESSAGE % self.user.nick(context),
+        if self.user.session(context) is not None:
+            message_to_share = {
+                "type": 'text',
+                "context": None,
+                "data": {
+                    "text": sr.GOAL_SHARING_MESSAGE % self.user.nick(context),
+                    }
                 }
-            }
-        self.session.share_user_response(context, message_to_share)
+            self.session.share_user_response(context, message_to_share)
 
-        message_to_share = {
-            "type": 'image',
-            "context": None,
-            "data": {
-                "file_ids": [file_id],
+            message_to_share = {
+                "type": 'image',
+                "context": None,
+                "data": {
+                    "file_ids": [file_id],
+                    }
                 }
-            }
-        self.session.share_user_response(context, message_to_share)
+            self.session.share_user_response(context, message_to_share)
 
     def state_asked_goal_detail(self, message):
         "if response is text, record it as goal detail"
-        """TODO: to prevent emorec response being recorded, branch order
-        in operate function is adjusted. It is error-prone."""
         context = message["context"]
         if message["type"] == 'text':
             key = self.key["list_goal_achievement"] % self.serialize_context(context)
@@ -267,9 +278,10 @@ class ModuleNalidaClassicSecond(Module):
 
         elif self.user.membership_test(context):
             state = self.user.state(context)
-            if self.user.session(context) is not None and emorec.is_emorec_response(message):
+            if self.user.goal_description(context) is not None and \
+                    emorec.is_emorec_response(message):
                 self.record_emorec_response(message)
-            elif self.user.session(context) is not None and message["type"] == 'image':
+            elif self.user.goal_description(context) is not None and message["type"] == 'image':
                 self.record_goal_response(message)
             elif state is not None:
                 getattr(self, 'state_' + state)(message)
