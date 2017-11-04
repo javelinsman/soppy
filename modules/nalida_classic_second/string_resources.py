@@ -47,3 +47,8 @@ EMOREC_RESPONSE_RECORDED_BUT_NOT_SHARED = '응답이 기록되고 공유는 되�
 ASK_GOAL_RESPONSE_CONFIRMATION = '이 사진이 오늘의 목표 인증샷이 맞나요?'
 RESPONSE_GOAL_YES = '네'
 REQUEST_ANOTHER_PICTURE = '그럼 나중에 다시 올려주세요!'
+
+ERROR_MAKE_SESSION_INVALID_CONTEXT = '잘못된 아이디가 포함되어 있습니다. 다시 확인해주세요.'
+ERROR_MAKE_SESSION_NO_TARGET_CHAT = '중계방이 등록되지 않은 사용자가 있습니다. 다시 확인해주세요.'
+COMMAND_PREFIX_REGISTER_BROADCASTING_ROOM = 'REGBCROOM:'
+REGISTERED_AS_BROADCASTING_ROOM = '이 곳이 %s님의 중계방으로 등록되었습니다. 감사합니다.'

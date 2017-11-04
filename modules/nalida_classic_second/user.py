@@ -22,7 +22,7 @@ class User:
             "emorec_block": 'user-emorec-block:%s',
             "registered_users": 'user-registered-users',
             "registration_keys": 'user-registration-keys',
-            "target_chat": 'user-target-chat',
+            "target_chat": 'user-target-chat:%s',
             }
 
     def membership_test(self, context):
@@ -147,7 +147,7 @@ class User:
         else:
             return self.db.get(key) is not None
 
-    def target_chat(self, context, value):
+    def target_chat(self, context, value=None):
         "getset for target chat"
         serialized = Module.serialize_context(context)
         key = self.key["target_chat"] % serialized

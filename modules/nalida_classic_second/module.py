@@ -39,6 +39,8 @@ class ModuleNalidaClassicSecond(Module):
         context = message["context"]
         return any((
             context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN,
+            message["type"] == 'text' and \
+                message["data"]["text"].startswith(sr.COMMAND_PREFIX_REGISTER_BROADCASTING_ROOM),
             self.user.membership_test(context),
             message["type"] == 'text' and self.user.is_registration_key(message["data"]["text"]),
             message["type"] == 'timer',
@@ -145,6 +147,7 @@ class ModuleNalidaClassicSecond(Module):
                         }
                     }
                 self.session.share_user_response(context, message_to_share)
+                self.send_text(context, sr.EMOREC_RESPONSE_RECORDED_AND_SHARED)
             else:
                 self.send_text(context, sr.EMOREC_RESPONSE_RECORDED_BUT_NOT_SHARED)
 
@@ -153,6 +156,7 @@ class ModuleNalidaClassicSecond(Module):
     def record_goal_response(self, message):
         "send confirmation message"
         context = message["context"]
+        """
         self.send_text(context, sr.ASK_GOAL_RESPONSE_CONFIRMATION)
         self.user.state(context, 'asked_goal_confirmation')
 
@@ -163,6 +167,7 @@ class ModuleNalidaClassicSecond(Module):
             self.send_text(context, sr.REQUEST_ANOTHER_PICTURE)
             self.user.state(context, '')
             return
+        """
         key = self.key_list_goal_achievement % self.serialize_context(context)
         file_id = message["data"]["file_ids"][-1]
         self.db.lpush(key, json.dumps([file_id, '']))
@@ -231,29 +236,45 @@ class ModuleNalidaClassicSecond(Module):
     def operator(self, message):
         context = message["context"]
         if context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN:
-            if message["type"] == 'text':
-                text = message["data"]["text"]
-                if text == sr.COMMAND_PUBLISH_REGISTRATION_KEY:
-                    self.send_text(context, self.user.generate_new_registration_key())
-                elif text.split()[0] == sr.COMMAND_MAKE_SESSION:
-                    """
-                    session_name = self.session.create(
-                        list(map(self.parse_context, text.split()[1:-1])))
-                    self.session.target_chat(session_name, text.split()[-1])
-                    self.send_text(context, 'created session: %s, target chat is %s' %
-                                   (session_name, text.split()[-1]))
-                    """
+            try:
+                if message["type"] == 'text':
+                    text = message["data"]["text"]
+                    if text == sr.COMMAND_PUBLISH_REGISTRATION_KEY:
+                        self.send_text(context, self.user.generate_new_registration_key())
+                    elif text.split()[0] == sr.COMMAND_MAKE_SESSION:
+                        target_contexts = list(map(self.parse_context, text.split()[1:]))
+                        logging.debug('%r', target_contexts)
+                        if not all(map(self.user.membership_test, target_contexts)):
+                            self.send_text(context, sr.ERROR_MAKE_SESSION_INVALID_CONTEXT)
+                            return
+                        if any(map(lambda x: self.user.target_chat(x) is None, target_contexts)):
+                            self.send_text(context, sr.ERROR_MAKE_SESSION_NO_TARGET_CHAT)
+                            return
+                        session_name = self.session.create(target_contexts)
+                        self.send_text(context, 'created session: %s' % session_name)
+            except Exception as exception: #pylint: disable=broad-except
+                self.send_text({"chat_id": bot_config.NALIDA_CLASSIC_SECOND_ADMIN},
+                               '에러가 발생했습니다: %s' % str(exception))
+        elif message["type"] == 'text' and \
+                message["data"]["text"].startswith(sr.COMMAND_PREFIX_REGISTER_BROADCASTING_ROOM):
+            text = message["data"]["text"]
+            comm = sr.COMMAND_PREFIX_REGISTER_BROADCASTING_ROOM
+            text = text[len(comm):].strip()
+            context = self.parse_context(text)
+            self.user.target_chat(context, self.serialize_context(message["context"]))
+            self.send_text(message["context"],
+                           sr.REGISTERED_AS_BROADCASTING_ROOM % self.user.nick(context))
+
         elif self.user.membership_test(context):
             state = self.user.state(context)
-            if emorec.is_emorec_response(message):
+            if self.user.session(context) is not None and emorec.is_emorec_response(message):
                 self.record_emorec_response(message)
-            elif message["type"] == 'image':
+            elif self.user.session(context) is not None and message["type"] == 'image':
                 self.record_goal_response(message)
             elif state is not None:
                 getattr(self, 'state_' + state)(message)
             else:
                 self.send_text(context, 'meow')
-
         elif message["type"] == 'text' and self.user.is_registration_key(message["data"]["text"]):
             self.user.register_user(context, message["data"]["text"])
             self.send_text(context, sr.REGISTER_COMPLETE)
