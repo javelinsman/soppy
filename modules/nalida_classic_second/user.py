@@ -10,8 +10,8 @@ from basic.module import Module
 
 class User:
     "mainly about getters and setters"
-    def __init__(self, db):
-        self.db = db #pylint: disable=invalid-name
+    def __init__(self, parent):
+        self.db = parent.db #pylint: disable=invalid-name
         self.key = {
             "nickname": 'user-key-nickname:%s',
             "goal": 'user-goal:%s',
@@ -22,6 +22,7 @@ class User:
             "emorec_block": 'user-emorec-block:%s',
             "registered_users": 'user-registered-users',
             "registration_keys": 'user-registration-keys',
+            "target_chat": 'user-target-chat',
             }
 
     def membership_test(self, context):
@@ -145,3 +146,12 @@ class User:
             self.db.expire(key, 30 * 60)
         else:
             return self.db.get(key) is not None
+
+    def target_chat(self, context, value):
+        "getset for target chat"
+        serialized = Module.serialize_context(context)
+        key = self.key["target_chat"] % serialized
+        if value is None:
+            return self.db.get(key)
+        else:
+            self.db.set(key, value)

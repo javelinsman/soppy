@@ -25,8 +25,8 @@ class ModuleNalidaClassicSecond(Module):
     "Module description above"
     def __init__(self):
         super().__init__(__name__)
-        self.user = User(self.db)
-        self.session = Session(self.db, self.user)
+        self.user = User(self)
+        self.session = Session(self)
         self.key_context_state = 'key-context-state:%s'
         self.key_list_goal_achievement = 'key-list-goal-achievement:%s'
         self.key_list_emorec_response = 'key-emorec-response:%s'
@@ -104,6 +104,25 @@ class ModuleNalidaClassicSecond(Module):
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT)
 
+    def record_emorec_response(self, message):
+        "record emorec response and share it"
+        context = message["context"]
+        key = self.key_list_emorec_response % self.serialize_context(context)
+        text = message["data"]["text"]
+        self.db.lpush(key, json.dumps([text, '']))
+        reactive_sentence = emorec.REPLYS[emorec.EMOTIONS.index(text)]
+        self.send_text(context, reactive_sentence + ' ' + sr.ASK_EMOTION_DETAIL)
+        self.user.state(context, 'asked_emotion_detail')
+        # sharing the response
+        message_to_share = {
+            "type": 'text',
+            "context": None,
+            "data": {
+                "text": sr.EMOREC_SHARING_MESSAGE % text,
+                }
+            }
+        self.session.share_user_response(context, message_to_share)
+
     def state_asked_emotion_detail(self, message):
         "record emotion response detail"
         context = message["context"]
@@ -118,15 +137,55 @@ class ModuleNalidaClassicSecond(Module):
             recent_response[1] = message["data"]["text"]
             self.db.lpush(key, json.dumps(recent_response))
             if share:
-                target_chat = self.session.target_chat(self.user.session(context))
-                if target_chat is not None:
-                    sharing_message = sr.EMOREC_SHARING_DETAILED_MESSAGE % text
-                    self.send_text({"chat_id":target_chat}, sharing_message)
-                self.send_text(context, sr.EMOREC_RESPONSE_RECORDED_AND_SHARED)
+                message_to_share = {
+                    "type": 'text',
+                    "context": None,
+                    "data": {
+                        "text": sr.EMOREC_SHARING_DETAILED_MESSAGE % text
+                        }
+                    }
+                self.session.share_user_response(context, message_to_share)
             else:
                 self.send_text(context, sr.EMOREC_RESPONSE_RECORDED_BUT_NOT_SHARED)
 
         self.user.state(context, '')
+
+    def record_goal_response(self, message):
+        "send confirmation message"
+        context = message["context"]
+        self.send_text(context, sr.ASK_GOAL_RESPONSE_CONFIRMATION)
+        self.user.state(context, 'asked_goal_confirmation')
+
+    def state_asked_goal_confirmation(self, message):
+        "record daily goal achievement and share it"
+        context = message["context"]
+        if message["data"]["text"] != sr.RESPONSE_GOAL_YES:
+            self.send_text(context, sr.REQUEST_ANOTHER_PICTURE)
+            self.user.state(context, '')
+            return
+        key = self.key_list_goal_achievement % self.serialize_context(context)
+        file_id = message["data"]["file_ids"][-1]
+        self.db.lpush(key, json.dumps([file_id, '']))
+        self.send_text(context, sr.ASK_GOAL_ACHIEVEMENT_DETAIL)
+        self.user.state(context, 'asked_goal_detail')
+
+        message_to_share = {
+            "type": 'text',
+            "context": None,
+            "data": {
+                "text": sr.GOAL_SHARING_MESSAGE % self.user.nick(context),
+                }
+            }
+        self.session.share_user_response(context, message_to_share)
+
+        message_to_share = {
+            "type": 'image',
+            "context": None,
+            "data": {
+                "file_ids": [file_id],
+                }
+            }
+        self.session.share_user_response(context, message_to_share)
 
     def state_asked_goal_detail(self, message):
         "if response is text, record it as goal detail"
@@ -141,35 +200,6 @@ class ModuleNalidaClassicSecond(Module):
             self.send_text(context, sr.RESPONSE_RECORDED)
             logging.debug('recent_response: %r', recent_response)
         self.user.state(context, '')
-
-    def record_goal_response(self, message):
-        "record daily goal achievement and share it"
-        context = message["context"]
-        key = self.key_list_goal_achievement % self.serialize_context(context)
-        file_id = message["data"]["file_ids"][-1]
-        self.db.lpush(key, json.dumps([file_id, '']))
-        target_chat = self.session.target_chat(self.user.session(context))
-        sharing_message = sr.GOAL_SHARING_MESSAGE % self.user.nick(context)
-        self.send_text({"chat_id":target_chat}, sharing_message)
-        self.send_image({"chat_id":target_chat}, file_id)
-        self.send_text(context, sr.ASK_GOAL_ACHIEVEMENT_DETAIL)
-        self.user.state(context, 'asked_goal_detail')
-
-    def record_emorec_response(self, message):
-        "record emorec response and share it"
-        context = message["context"]
-        key = self.key_list_emorec_response % self.serialize_context(context)
-        text = message["data"]["text"]
-        self.db.lpush(key, json.dumps([text, '']))
-        reactive_sentence = emorec.REPLYS[emorec.EMOTIONS.index(text)]
-        self.send_text(context, reactive_sentence + ' ' + sr.ASK_EMOTION_DETAIL)
-        self.user.state(context, 'asked_emotion_detail')
-
-        # sharing the response
-        target_chat = self.session.target_chat(self.user.session(context))
-        if target_chat is not None:
-            sharing_message = sr.EMOREC_SHARING_MESSAGE % text
-            self.send_text({"chat_id":target_chat}, sharing_message)
 
     def emorec_routine(self, message):
         "check if it has to ask emotions for some user"
@@ -206,11 +236,13 @@ class ModuleNalidaClassicSecond(Module):
                 if text == sr.COMMAND_PUBLISH_REGISTRATION_KEY:
                     self.send_text(context, self.user.generate_new_registration_key())
                 elif text.split()[0] == sr.COMMAND_MAKE_SESSION:
+                    """
                     session_name = self.session.create(
                         list(map(self.parse_context, text.split()[1:-1])))
                     self.session.target_chat(session_name, text.split()[-1])
                     self.send_text(context, 'created session: %s, target chat is %s' %
                                    (session_name, text.split()[-1]))
+                    """
         elif self.user.membership_test(context):
             state = self.user.state(context)
             if emorec.is_emorec_response(message):

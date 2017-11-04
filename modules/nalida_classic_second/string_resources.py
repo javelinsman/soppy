@@ -38,8 +38,12 @@ RESPONSE_RECORDED = '응답이 기록되었어요. 감사합니다!'
 ASK_EMOTION = '지금은 무슨 감정을 느끼고 있나요?\n메세지를 늦게 보았어도 현재의 상태를 기록해주세요.'
 ASK_EMOTION_DETAIL = '감정을 더 자세히 알려주세요.'
 EMOREC_SHARING_MESSAGE = '누군가의 현재 감정: %s'
-EMOREC_SHARING_DETAILED_MESSAGE = '%s'
+EMOREC_SHARING_DETAILED_MESSAGE = '감정 설명: %s'
 COMMAND_NOT_TO_SHARE_EMOTION = '비공개'
 
 EMOREC_RESPONSE_RECORDED_AND_SHARED = '응답이 기록되고 공유되었어요. 감사합니다!'
 EMOREC_RESPONSE_RECORDED_BUT_NOT_SHARED = '응답이 기록되고 공유는 되지 않았어요. 감사합니다!'
+
+ASK_GOAL_RESPONSE_CONFIRMATION = '이 사진이 오늘의 목표 인증샷이 맞나요?'
+RESPONSE_GOAL_YES = '네'
+REQUEST_ANOTHER_PICTURE = '그럼 나중에 다시 올려주세요!'

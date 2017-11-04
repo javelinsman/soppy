@@ -6,22 +6,24 @@ from basic.module import Module
 
 class Session:
     "mainly for get-set, also for creating"
-    def __init__(self, db, user):
-        self.db = db
-        self.user = user
-        self.key_session_names = 'session-session-names'
-        self.key_users = 'session-users:%s'
-        self.key_target_chat = 'session-target-chat:%s'
+    def __init__(self, parent):
+        self.db = parent.db
+        self.user = parent.user
+        self.send = parent.send
+        self.key = {
+            "session_names": 'session-session-names',
+            "users": 'session-users:%s',
+            }
 
     def create(self, contexts):
         "create a new session and return session name"
         while True:
             session_name = ''.join([random.choice(string.ascii_letters) for _ in range(25)])
-            if not self.db.sismember(self.key_session_names, session_name):
+            if not self.db.sismember(self.key["session_names"], session_name):
                 break
-        self.db.sadd(self.key_session_names, session_name)
+        self.db.sadd(self.key["session_names"], session_name)
 
-        key_users = self.key_users % session_name
+        key_users = self.key["users"] % session_name
         for context in contexts:
             serialized = Module.serialize_context(context)
             self.db.sadd(key_users, serialized)
@@ -29,14 +31,15 @@ class Session:
 
         return session_name
 
-    def users(self, session_name):
+    def list_of_users(self, session_name):
         "getter for users in the session"
-        return self.db.smembers(self.key_users % session_name)
+        return list(map(Module.parse_context, self.db.smembers(self.key["users"] % session_name)))
 
-    def target_chat(self, session_name, value=None):
-        "getset for target chat"
-        key = self.key_target_chat % session_name
-        if value is None:
-            return self.db.get(key)
-        else:
-            self.db.set(key, value)
+    def share_user_response(self, context, message):
+        "share message to context's team members"
+        session_name = self.user.session(context)
+        contexts = self.list_of_users(session_name)
+        for target_context in contexts:
+            target_chat = self.user.target_chat(target_context)
+            message["context"] = {"chat_id": target_chat}
+            self.send(message)
