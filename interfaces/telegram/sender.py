@@ -37,6 +37,7 @@ class InterfaceTelegramSender(threading.Thread):
             for chat_id, message_queue in list(self.message_queues.items()):
                 if not message_queue.empty():
                     message = message_queue.get()
+                    logging.info('SEND: %r', message)
                     if message["type"] == 'text':
                         self.send_message(chat_id, message["data"]["text"])
                     elif message["type"] == 'markup_text':
