@@ -64,9 +64,9 @@ REGISTERED_AS_BROADCASTING_ROOM = '이 곳이 %s님의 중계방으로 등록되
 
 # 모니터링
 REPORT_NICKNAME = '사용자 %s가 닉네임을 등록했습니다: %s'
-REPORT_BROADCASTING_ROOM_REGKEY = multi(
+HELP_MESSAGE_BROADCASTING_ROOM_REGKEY = multi(
     '%s님의 중계방을 등록하려면 아래의 메세지를 직접 보내게 하세요',
-    '%s'
+    'REGBCROOM:%s'
     )
 REPORT_EXPLANATION = '%s님의 별명 설명: %s'
 REPORT_GOAL_NAME = '%s님의 목표 이름: %s'

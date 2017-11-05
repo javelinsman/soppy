@@ -76,6 +76,8 @@ class ModuleNalidaClassicSecond(Module):
                 nickname = self.db.get('candidate-nickname:%s' % serialized)
                 self.user.nick(context, nickname)
                 self.send_to_monitoring(sr.REPORT_NICKNAME % (serialized, nickname))
+                self.send_to_monitoring(sr.HELP_MESSAGE_BROADCASTING_ROOM_REGKEY %
+                                        (nickname, serialized))
                 self.send_text(context, sr.NICKNAME_SUBMITTED % nickname)
                 self.send_text(context, sr.ASK_EXPLANATION_FOR_NICKNAME)
                 self.user.state(context, 'asked_nick_explanation')
