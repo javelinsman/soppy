@@ -37,6 +37,10 @@ class ModuleNalidaClassicSecond(Module):
         for subtext in text.split('$$$'):
             super().send_text(context, subtext)
 
+    def send_to_monitoring(self, text):
+        "send the text to monitoring room"
+        self.send_text({"chat_id": bot_config.NALIDA_CLASSIC_SECOND_MONITORING}, text)
+
     def filter(self, message):
         context = message["context"]
         return any((
@@ -70,6 +74,7 @@ class ModuleNalidaClassicSecond(Module):
                 serialized = self.serialize_context(context)
                 nickname = self.db.get('candidate-nickname:%s' % serialized)
                 self.user.nick(context, nickname)
+                self.send_to_monitoring(sr.REPORT_NICKNAME % (serialized, nickname))
                 self.send_text(context, sr.NICKNAME_SUBMITTED % nickname)
                 self.send_text(context, sr.ASK_EXPLANATION_FOR_NICKNAME)
                 self.user.state(context, 'asked_nick_explanation')
@@ -87,6 +92,8 @@ class ModuleNalidaClassicSecond(Module):
         if message["type"] == 'text':
             text = message["data"]["text"]
             self.user.explanation(context, text)
+            nickname = self.user.nick(context)
+            self.send_to_monitoring(sr.REPORT_EXPLANATION % (nickname, text))
             self.send_text(context, sr.EXPLANATION_SUBMITTED)
             self.send_text(context, sr.ASK_GOAL_NAME)
             self.user.state(context, 'asked_goal_name')
@@ -99,6 +106,8 @@ class ModuleNalidaClassicSecond(Module):
         if message["type"] == 'text':
             text = message["data"]["text"]
             self.user.goal_name(context, text)
+            nickname = self.user.nick(context)
+            self.send_to_monitoring(sr.REPORT_GOAL_NAME % (nickname, text))
             self.send_text(context, sr.GOAL_NAME_SUBMITTED)
             self.send_text(context, sr.ASK_GOAL_DESCRIPTION)
             self.user.state(context, 'asked_goal_description')
@@ -111,6 +120,8 @@ class ModuleNalidaClassicSecond(Module):
         if message["type"] == 'text':
             text = message["data"]["text"]
             self.user.goal_description(context, text)
+            nickname = self.user.nick(context)
+            self.send_to_monitoring(sr.REPORT_GOAL_DESCRIPTION % (nickname, text))
             self.send_text(context, sr.GOAL_DESCRIPTION_SUBMITTED)
             self.send_text(context, sr.INSTRUCTIONS_FOR_GOAL)
             self.send_text(context, sr.INSTRUCTIONS_FOR_EMOREC)
@@ -128,6 +139,10 @@ class ModuleNalidaClassicSecond(Module):
         reactive_sentence = emorec.REPLYS[emorec.EMOTIONS.index(text)]
         self.send_text(context, reactive_sentence + ' ' + sr.ASK_EMOTION_DETAIL)
         self.user.state(context, 'asked_emotion_detail')
+
+        nickname = self.user.nick(context)
+        self.send_to_monitoring(sr.REPORT_EMOREC_SHARING % (nickname, text))
+
         if self.user.session(context) is None:
             return
         message_to_share = {
@@ -150,8 +165,10 @@ class ModuleNalidaClassicSecond(Module):
                 text = text[len(sr.COMMAND_NOT_TO_SHARE_EMOTION):].strip()
                 share = False
             recent_response = json.loads(self.db.lpop(key))
-            recent_response[1] = message["data"]["text"]
+            recent_response[1] = text
             self.db.lpush(key, json.dumps(recent_response))
+            nickname = self.user.nick(context)
+            self.send_to_monitoring(sr.REPORT_EMOREC_DETAIL % (nickname, text))
             if share and self.user.session(context) is not None:
                 message_to_share = {
                     "type": 'text',
@@ -202,6 +219,10 @@ class ModuleNalidaClassicSecond(Module):
                     }
                 }
             self.session.share_user_response(context, message_to_share)
+            message_to_share["context"] = {
+                "chat_id": bot_config.NALIDA_CLASSIC_SECOND_MONITORING
+                }
+            self.send(message_to_share)
 
             message_to_share = {
                 "type": 'image',
@@ -211,6 +232,10 @@ class ModuleNalidaClassicSecond(Module):
                     }
                 }
             self.session.share_user_response(context, message_to_share)
+            message_to_share["context"] = {
+                "chat_id": bot_config.NALIDA_CLASSIC_SECOND_MONITORING
+                }
+            self.send(message_to_share)
 
     def state_asked_goal_detail(self, message):
         "if response is text, record it as goal detail"
@@ -237,6 +262,10 @@ class ModuleNalidaClassicSecond(Module):
                     }
                 self.session.share_user_response(context, message_to_share)
                 self.send_text(context, sr.GOAL_RESPONSE_RECORDED_AND_SHARED)
+                message_to_share["context"] = {
+                    "chat_id": bot_config.NALIDA_CLASSIC_SECOND_MONITORING
+                    }
+                self.send(message_to_share)
             else:
                 self.send_text(context, sr.GOAL_RESPONSE_RECORDED_BUT_NOT_SHARED)
         self.user.state(context, '')
@@ -263,7 +292,7 @@ class ModuleNalidaClassicSecond(Module):
                 self.user.emorec_time(context, True)
 
 
-    def operator(self, message):
+    def operator(self, message): #pylint: disable=too-many-branches
         context = message["context"]
         if context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN:
             try:
