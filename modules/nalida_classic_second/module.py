@@ -11,6 +11,7 @@ This module contains
 import logging
 import json
 import datetime
+import random
 
 
 from modules.nalida_classic_second import string_resources as sr
@@ -291,29 +292,47 @@ class ModuleNalidaClassicSecond(Module):
                     })
                 self.user.emorec_time(context, True)
 
+    def execute_admin_command(self, message):
+        "executes commands entered in the admin room"
+        try:
+            context = message["context"]
+            if message["type"] == 'text':
+                text = message["data"]["text"]
+                if text == sr.COMMAND_PUBLISH_REGISTRATION_KEY:
+                    self.send_text(context, self.user.generate_new_registration_key())
+                elif text.split()[0] == sr.COMMAND_MAKE_SESSION:
+                    target_contexts = list(map(self.parse_context, text.split()[1:]))
+                    logging.debug('%r', target_contexts)
+                    if not all(map(self.user.membership_test, target_contexts)):
+                        self.send_text(context, sr.ERROR_MAKE_SESSION_INVALID_CONTEXT)
+                        return
+                    if any(map(lambda x: self.user.target_chat(x) is None, target_contexts)):
+                        self.send_text(context, sr.ERROR_MAKE_SESSION_NO_TARGET_CHAT)
+                        return
+                    session_name = self.session.create(target_contexts)
+                    self.send_text(context, 'created session: %s' % session_name)
+        except Exception as exception: #pylint: disable=broad-except
+            self.send_text({"chat_id": bot_config.NALIDA_CLASSIC_SECOND_ADMIN},
+                           '에러가 발생했습니다: %s' % str(exception))
 
-    def operator(self, message): #pylint: disable=too-many-branches
+    def execute_user_command(self, message):
+        "executes commands entered in user's chat"
+        context = message["context"]
+        state = self.user.state(context)
+        if self.user.goal_description(context) is not None and \
+                emorec.is_emorec_response(message):
+            self.record_emorec_response(message)
+        elif self.user.goal_description(context) is not None and message["type"] == 'image':
+            self.record_goal_response(message)
+        elif state is not None:
+            getattr(self, 'state_' + state)(message)
+        else:
+            self.send_text(context, random.choice(sr.CAT_MEOWS))
+
+    def operator(self, message):
         context = message["context"]
         if context["chat_id"] == bot_config.NALIDA_CLASSIC_SECOND_ADMIN:
-            try:
-                if message["type"] == 'text':
-                    text = message["data"]["text"]
-                    if text == sr.COMMAND_PUBLISH_REGISTRATION_KEY:
-                        self.send_text(context, self.user.generate_new_registration_key())
-                    elif text.split()[0] == sr.COMMAND_MAKE_SESSION:
-                        target_contexts = list(map(self.parse_context, text.split()[1:]))
-                        logging.debug('%r', target_contexts)
-                        if not all(map(self.user.membership_test, target_contexts)):
-                            self.send_text(context, sr.ERROR_MAKE_SESSION_INVALID_CONTEXT)
-                            return
-                        if any(map(lambda x: self.user.target_chat(x) is None, target_contexts)):
-                            self.send_text(context, sr.ERROR_MAKE_SESSION_NO_TARGET_CHAT)
-                            return
-                        session_name = self.session.create(target_contexts)
-                        self.send_text(context, 'created session: %s' % session_name)
-            except Exception as exception: #pylint: disable=broad-except
-                self.send_text({"chat_id": bot_config.NALIDA_CLASSIC_SECOND_ADMIN},
-                               '에러가 발생했습니다: %s' % str(exception))
+            self.execute_admin_command(message)
         elif message["type"] == 'text' and \
                 message["data"]["text"].startswith(sr.COMMAND_PREFIX_REGISTER_BROADCASTING_ROOM):
             text = message["data"]["text"]
@@ -325,16 +344,8 @@ class ModuleNalidaClassicSecond(Module):
                            sr.REGISTERED_AS_BROADCASTING_ROOM % self.user.nick(context))
 
         elif self.user.membership_test(context):
-            state = self.user.state(context)
-            if self.user.goal_description(context) is not None and \
-                    emorec.is_emorec_response(message):
-                self.record_emorec_response(message)
-            elif self.user.goal_description(context) is not None and message["type"] == 'image':
-                self.record_goal_response(message)
-            elif state is not None:
-                getattr(self, 'state_' + state)(message)
-            else:
-                self.send_text(context, 'meow')
+            self.execute_user_command(message)
+
         elif message["type"] == 'text' and self.user.is_registration_key(message["data"]["text"]):
             self.user.register_user(context, message["data"]["text"])
             self.send_text(context, sr.REGISTER_COMPLETE)

@@ -58,9 +58,6 @@ ERROR_MAKE_SESSION_NO_TARGET_CHAT = '중계방이 등록되지 않은 사용자�
 COMMAND_PREFIX_REGISTER_BROADCASTING_ROOM = 'REGBCROOM:'
 REGISTERED_AS_BROADCASTING_ROOM = '이 곳이 %s님의 중계방으로 등록되었습니다. 감사합니다.'
 
-# 일반
-RESPONSE_RECORDED = '응답이 기록되었어요. 감사합니다!'
-
 # 모니터링
 REPORT_NICKNAME = '사용자 %s가 닉네임을 등록했습니다: %s'
 REPORT_EXPLANATION = '%s님의 별명 설명: %s'
@@ -68,3 +65,8 @@ REPORT_GOAL_NAME = '%s님의 목표 이름: %s'
 REPORT_GOAL_DESCRIPTION = '%s님의 목표 설명: %s'
 REPORT_EMOREC_SHARING = '%s님의 감정: %s'
 REPORT_EMOREC_DETAIL = '%s님의 감정설명: %s'
+
+# 기타
+RESPONSE_RECORDED = '응답이 기록되었어요. 감사합니다!'
+CAT_MEOWS = ['냥', '야옹', '냐옹', '야아옹', '냐아옹']
+
