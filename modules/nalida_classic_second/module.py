@@ -283,7 +283,8 @@ class ModuleNalidaClassicSecond(Module):
             if b_hour == -1:
                 continue
             datetime_baseline = datetime.datetime(100, 1, 1, b_hour, b_minute, 0)
-            if datetime_baseline <= datetime_now:
+            elapsed_time = (datetime_now - datetime_baseline).seconds
+            if datetime_baseline <= datetime_now and elapsed_time <= 180:
                 self.send({
                     "type": 'markup_text',
                     "context": context,
