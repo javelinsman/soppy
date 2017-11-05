@@ -302,28 +302,41 @@ class ModuleNalidaClassicSecond(Module):
                 if text == sr.COMMAND_PUBLISH_REGISTRATION_KEY:
                     self.send_text(context, self.user.generate_new_registration_key())
                 elif args[0] == sr.COMMAND_MAKE_SESSION:
-                    target_contexts = list(map(self.parse_context, args[1:]))
-                    logging.debug('%r', target_contexts)
+                    nicks = args[1:]
+                    target_contexts = []
+                    for nick in nicks:
+                        for target_context in self.user.list_of_users():
+                            if self.user.nick(target_context) == nick:
+                                target_contexts.append(target_context)
+                    if len(target_contexts) != len(nicks):
+                        self.send_text(context, sr.ERROR_MAKE_SESSION_INVALID_CONTEXT)
+                        return
                     if not all(map(self.user.membership_test, target_contexts)):
                         self.send_text(context, sr.ERROR_MAKE_SESSION_INVALID_CONTEXT)
                         return
-                    if any(map(lambda x: self.user.target_chat(x) is None, target_contexts)):
-                        self.send_text(context, sr.ERROR_MAKE_SESSION_NO_TARGET_CHAT)
-                        return
+                    for target_context in target_contexts:
+                        if self.user.target_chat(target_context) is None:
+                            self.send_text(context, sr.ERROR_MAKE_SESSION_NO_TARGET_CHAT %
+                                           self.user.nick(target_context))
+                            return
                     session_name = self.session.create(target_contexts)
                     self.send_text(context, 'created session: %s' % session_name)
                 elif args[0] == sr.COMMAND_NOTICE:
                     ind = text.find(':')
                     nicks = text[:ind].split()[1:]
                     content = text[ind+1:].strip()
-                    cnt = 0
+                    target_contexts = []
                     for nick in nicks:
                         for target_context in self.user.list_of_users():
                             if self.user.nick(target_context) == nick:
-                                cnt += 1
-                                self.send_text(target_context, content)
+                                target_contexts.append(target_context)
                                 break
-                    self.send_text(context, sr.REPORT_NOTICE_COMPLETE % cnt)
+                    if len(nicks) != len(target_contexts):
+                        self.send_text(context, sr.ERROR_NOTICE_INVALID_CONTEXT)
+                        return
+                    for target_context in target_contexts:
+                        self.send_text(target_context, content)
+                    self.send_text(context, sr.REPORT_NOTICE_COMPLETE)
 
         except Exception as exception: #pylint: disable=broad-except
             self.send_text({"chat_id": bot_config.NALIDA_CLASSIC_SECOND_ADMIN},

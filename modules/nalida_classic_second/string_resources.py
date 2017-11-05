@@ -51,11 +51,12 @@ EMOREC_RESPONSE_RECORDED_BUT_NOT_SHARED = '응답이 기록되고 공유는 되�
 
 # Admin 방
 ERROR_MAKE_SESSION_INVALID_CONTEXT = '잘못된 아이디가 포함되어 있습니다. 다시 확인해주세요.'
-ERROR_MAKE_SESSION_NO_TARGET_CHAT = '중계방이 등록되지 않은 사용자가 있습니다. 다시 확인해주세요.'
+ERROR_MAKE_SESSION_NO_TARGET_CHAT = '%s님의 중계방이 등록되지 않았습니다. 다시 확인해주세요.'
+ERROR_NOTICE_INVALID_CONTEXT = '잘못된 닉네임이 포함되어 있습니다. 다시 확인해주세요.'
 COMMAND_PUBLISH_REGISTRATION_KEY = '등록키발급'
 COMMAND_MAKE_SESSION = '세션등록'
 COMMAND_NOTICE = '공지'
-REPORT_NOTICE_COMPLETE = '총 %d분께 공지를 완료했습니다!'
+REPORT_NOTICE_COMPLETE = '공지를 완료했습니다!'
 
 
 COMMAND_PREFIX_REGISTER_BROADCASTING_ROOM = 'REGBCROOM:'
