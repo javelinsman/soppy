@@ -298,10 +298,11 @@ class ModuleNalidaClassicSecond(Module):
             context = message["context"]
             if message["type"] == 'text':
                 text = message["data"]["text"]
+                args = text.split()
                 if text == sr.COMMAND_PUBLISH_REGISTRATION_KEY:
                     self.send_text(context, self.user.generate_new_registration_key())
-                elif text.split()[0] == sr.COMMAND_MAKE_SESSION:
-                    target_contexts = list(map(self.parse_context, text.split()[1:]))
+                elif args[0] == sr.COMMAND_MAKE_SESSION:
+                    target_contexts = list(map(self.parse_context, args[1:]))
                     logging.debug('%r', target_contexts)
                     if not all(map(self.user.membership_test, target_contexts)):
                         self.send_text(context, sr.ERROR_MAKE_SESSION_INVALID_CONTEXT)
@@ -311,6 +312,19 @@ class ModuleNalidaClassicSecond(Module):
                         return
                     session_name = self.session.create(target_contexts)
                     self.send_text(context, 'created session: %s' % session_name)
+                elif args[0] == sr.COMMAND_NOTICE:
+                    ind = text.find(':')
+                    nicks = text[:ind].split()[1:]
+                    content = text[ind+1:].strip()
+                    cnt = 0
+                    for nick in nicks:
+                        for target_context in self.user.list_of_users():
+                            if self.user.nick(target_context) == nick:
+                                cnt += 1
+                                self.send_text(target_context, content)
+                                break
+                    self.send_text(context, sr.REPORT_NOTICE_COMPLETE % cnt)
+
         except Exception as exception: #pylint: disable=broad-except
             self.send_text({"chat_id": bot_config.NALIDA_CLASSIC_SECOND_ADMIN},
                            '에러가 발생했습니다: %s' % str(exception))
