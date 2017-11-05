@@ -2,7 +2,7 @@
 String Resourses for NalidaClassicSecond module
 """
 
-# 메세지를 여러 개로 끊고 싶을 때는 이 함수를 사용하세요.
+# 메시지를 여러 개로 끊고 싶을 때는 이 함수를 사용하세요.
 # 아래의 예시 참조.
 def multi(*args):
     "use this function when you want to send multple messages"
@@ -16,37 +16,40 @@ REGISTER_COMPLETE = multi(
     '앞으로 한 달 동안 날리다와 함께 소중한 시간 보내시길 바라요.',
     )
 
-ASK_NICKNAME = '우선 진행을 하기에 앞서서 참가자님을 뭐라고 불러야 할지를 알고 싶어요. 오늘 워크샵에서 정하신 별칭이 뭐예요?'
-CONFIRM_NICKNAME = '아래의 별명이 맞나요? "네", "아니오"로 대답해주세요.\n[%s]'
+ASK_NICKNAME = '우선 진행을 하기에 앞서 참가자님을 어떻게 부르면 좋을지 알고 싶어요. 오늘 워크샵에서 정하신 별칭이 뭐예요?'
+CONFIRM_NICKNAME = '아래의 별칭이 맞나요? "네", "아니오"로 대답해주세요.\n[%s]'
 RESPONSE_NICKNAME_YES = '네'
 RESPONSE_NICKNAME_NO = '아니오'
 WRONG_RESPONSE_FORMAT = '잘못된 형식의 답변입니다.'
-NICKNAME_SUBMITTED = '이제부터 %s님이라고 부를게요'
+NICKNAME_SUBMITTED = '이제부터 %s님이라고 부를게요!'
 ASK_NICKNAME_AGAIN = '그럼 뭐예요?'
-ASK_EXPLANATION_FOR_NICKNAME = '별명 왜 그렇게 지었어요? 2~3문장으로 답변해주세요.'
+ASK_EXPLANATION_FOR_NICKNAME = '이런 별칭을 짓게 되신 계기는 무엇인가요? 2~3문장으로 답변해주세요.'
 EXPLANATION_SUBMITTED = '좋은 설명 잘 들었어요!'
-ASK_GOAL_NAME = '4주 동안 이룰 목표 이름을 알려주세요'
-GOAL_NAME_SUBMITTED = '좋은 목표 이름 잘 들었어요!'
-ASK_GOAL_DESCRIPTION = '4주 동안 이룰 목표 설명을 알려주세요'
-GOAL_DESCRIPTION_SUBMITTED = '좋은 목표 설명 잘 들었어요!'
-INSTRUCTIONS_FOR_GOAL = '이제부터 목표를 매일 인증샷을 찍어서 올리셔야 해요. 지금 이곳에 그냥 사진을 올리면 돼요. 동료들과 공유될 거예요.'
-INSTRUCTIONS_FOR_EMOREC = '그리고 오늘부터 매일 랜덤한 시각에 3번 감정을 물어볼 거예요. 잘 대답해주세요. 일단 지금 연습삼아 해볼게요.'
+ASK_GOAL_NAME = multi(
+	'날리다 워크샵을 진행하는 4주 동안 각자의 목표를 설정해서 함께 달성해보려고 해요.',
+	'4주동안 이루고 싶은 목표를 정하고 이름을 지어서 알려주세요. 설명은 생략하고 이름만요!'
+	)
+GOAL_NAME_SUBMITTED = '오오, 정말 재미있어 보이는 목표네요!'
+ASK_GOAL_DESCRIPTION = '어떤 내용인지 정말 궁금한데요? 이제 목표에 대해서 더 자세히 설명해주시겠어요?'
+GOAL_DESCRIPTION_SUBMITTED = '헤헤. 설명 잘 들었어요. 꼭 목표를 달성하실 수 있기를 바랄게요.'
+INSTRUCTIONS_FOR_GOAL = '진행자님들이 설명하신 것처럼 오늘부터 실천한 목표의 인증샷을 매일 찍어서 서로 공유하려고 해요. 지금 저와 얘기하고 있는 이 방에 사진을 올리면 된답니다.'
+INSTRUCTIONS_FOR_EMOREC = '그리고 오늘부터 하루에 3번씩 랜덤한 시각에 지금 어떤 감정을 느끼고 있는지를 물어볼 거예요. 나의 감정을 파악하는 데 도움이 되는 활동이니까 성실하게 답변해주시기를 바라요. 지금 바로 한번 연습해 볼까요?.'
 
 # 목표 인증샷
-ASK_GOAL_RESPONSE_CONFIRMATION = '이 사진이 오늘의 목표 인증샷이 맞나요?'
+ASK_GOAL_RESPONSE_CONFIRMATION = '이 사진이 오늘의 목표 인증샷이 맞나요? 맞으면 "네"라고 말해주세요.'
 RESPONSE_GOAL_YES = '네'
 REQUEST_ANOTHER_PICTURE = '그럼 나중에 다시 올려주세요!'
 GOAL_SHARING_MESSAGE = '%s님의 목표 인증샷\n[%s]'
-ASK_GOAL_ACHIEVEMENT_DETAIL = '잘하셨어요. 오늘의 수행에 대한 소감을 자세히 말해줄래요?'
+ASK_GOAL_ACHIEVEMENT_DETAIL = '잘하셨어요. 오늘 목표를 달성하면서 느끼신 소감을 간단히 알려주실래요?'
 GOAL_SHARING_DETAILED_MESSAGE = '%s님의 목표 설명: %s'
 GOAL_RESPONSE_RECORDED_AND_SHARED = '응답이 기록되고 공유되었어요. 감사합니다!'
 GOAL_RESPONSE_RECORDED_BUT_NOT_SHARED = '응답이 기록되고 공유는 되지 않았어요. 감사합니다!'
 COMMAND_NOT_TO_SHARE_GOAL = '비공개' #노터치
 
 # 감정기록
-ASK_EMOTION = '지금은 무슨 감정을 느끼고 있나요?\n메세지를 늦게 보았어도 현재의 상태를 기록해주세요.'
-EMOREC_SHARING_MESSAGE = '누군가의 현재 감정: %s'
-ASK_EMOTION_DETAIL = '감정을 더 자세히 알려주세요.'
+ASK_EMOTION = '지금은 무슨 감정을 느끼고 있나요?\n메시지를 늦게 보았어도 현재의 상태를 기록해주세요.'
+EMOREC_SHARING_MESSAGE = '지금 어떤 동료는 이름 감정을 느끼고 있대요: %s'
+ASK_EMOTION_DETAIL = '감정을 더 자세히 설명해주세요.'
 EMOREC_SHARING_DETAILED_MESSAGE = '감정 설명: %s'
 EMOREC_RESPONSE_RECORDED_AND_SHARED = '응답이 기록되고 공유되었어요. 감사합니다!'
 EMOREC_RESPONSE_RECORDED_BUT_NOT_SHARED = '응답이 기록되고 공유는 되지 않았어요. 감사합니다!'
