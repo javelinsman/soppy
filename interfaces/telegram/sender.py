@@ -20,7 +20,10 @@ class InterfaceTelegramSender(threading.Thread):
         self.database = DatabaseWrapperRedis(
             host=bot_config.DB_HOST, port=bot_config.DB_PORT, db=bot_config.DB_NUM)
         self.pubsub = self.database.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe('channel-from-module-to-sender')
+        if bot_config.DEBUG:
+            self.pubsub.subscribe('debug-channel-from-module-to-sender')
+        else:
+            self.pubsub.subscribe('channel-from-module-to-sender')
         self.__exit = False
         self.message_queues = defaultdict(queue.Queue)
 

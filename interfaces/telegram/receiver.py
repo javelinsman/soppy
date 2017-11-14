@@ -60,7 +60,12 @@ class InterfaceTelegramReceiver(threading.Thread):
 
                     m_message["data"] = m_data
                     logging.info('RECV: %r', m_message)
-                    self.db.publish('channel-from-interface-to-module', json.dumps(m_message))
+                    if bot_config.DEBUG:
+                        self.db.publish('debug-channel-from-interface-to-module',
+                                        json.dumps(m_message))
+                    else:
+                        self.db.publish('channel-from-interface-to-module', json.dumps(m_message))
+
             except Exception as exception: #pylint: disable=broad-except
                 logging.error('Error occured at webhook: %s', str(exception))
                 logging.error('While handling the following data: %r', data)

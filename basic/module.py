@@ -25,7 +25,10 @@ class Module(threading.Thread):
             db=bot_config.DB_NUM, namespace=module_name
             )
         self.pubsub = self.db.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe('channel-from-interface-to-module')
+        if bot_config.DEBUG:
+            self.pubsub.subscribe('debug-channel-from-interface-to-module')
+        else:
+            self.pubsub.subscribe('channel-from-interface-to-module')
         self.__exit = False
 
     def run(self):
@@ -55,7 +58,10 @@ class Module(threading.Thread):
 
     def send(self, message):
         "broadcast message to sender interfaces"
-        self.db.publish('channel-from-module-to-sender', json.dumps(message))
+        if bot_config.DEBUG:
+            self.db.publish('debug-channel-from-module-to-sender', json.dumps(message))
+        else:
+            self.db.publish('channel-from-module-to-sender', json.dumps(message))
 
     def send_text(self, context, text):
         "send plain text to context"
