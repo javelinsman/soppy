@@ -29,17 +29,23 @@ class InterfaceTelegramReceiver(threading.Thread):
             "listens to messages from Telegram webhook"
             try:
                 data = request.get_json()
-                if "message" in data:
-                    message = data["message"]
+                if "message" in data or "callback_query" in data:
+                    if "message" in data:
+                        message = data["message"]
+                        m_from = message["from"]
+                    elif "callback_query" in data:
+                        callback_query = data["callback_query"]
+                        message = callback_query["message"]
+                        m_from = callback_query["from"]
                     m_message = {}
                     # Parse Context
                     m_context = {
                         "chat_id": message["chat"]["id"],
-                        "author_id": message["from"]["id"],
-                        "author_name": message["from"]["first_name"],
+                        "author_id": m_from["id"],
+                        "author_name": m_from["first_name"],
                     }
-                    if "last_name" in message["from"]:
-                        m_context["author_name"] += ' ' + message["from"]["last_name"]
+                    if "last_name" in m_from:
+                        m_context["author_name"] += ' ' + m_from["last_name"]
                     m_message["context"] = m_context
 
                     # Parse Data
@@ -55,8 +61,12 @@ class InterfaceTelegramReceiver(threading.Thread):
                         m_data["file_id"] = message["document"]["file_id"]
                         m_data["text"] = 'DOCUMENT:%s' % m_data["file_id"]
                     else:
-                        m_message["type"] = 'text'
-                        m_data["text"] = message["text"]
+                        if "message" in data:
+                            m_message["type"] = 'text'
+                            m_data["text"] = message["text"]
+                        elif "callback_query" in data:
+                            m_message["type"] = 'callback_query'
+                            m_data["text"] = callback_query["data"]
 
                     m_message["data"] = m_data
                     logging.info('RECV: %r', m_message)
