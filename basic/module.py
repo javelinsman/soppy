@@ -7,6 +7,7 @@ import json
 import threading
 import logging
 
+import requests
 import bot_config
 
 from basic.database_wrapper_redis import DatabaseWrapperRedis
@@ -81,6 +82,21 @@ class Module(threading.Thread):
             }
         self.send(message)
 
+    @staticmethod
+    def answer_callback_query(cbq_id, text=''):
+        "answer callback query with alerting text"
+        thr = threading.Thread(
+            target=requests.post,
+            args=(bot_config.API_BASE + 'answerCallbackQuery', ),
+            kwargs={
+                'data': {
+                    "callback_query_id" : cbq_id,
+                    "text" : text,
+                    }
+                }
+            )
+        thr.setDaemon(True)
+        thr.start()
 
     def shutdown(self):
         "this thread will be terminated soon when called"

@@ -67,6 +67,7 @@ class InterfaceTelegramReceiver(threading.Thread):
                         elif "callback_query" in data:
                             m_message["type"] = 'callback_query'
                             m_data["text"] = callback_query["data"]
+                            m_data["callback_query_id"] = callback_query["id"]
 
                     m_message["data"] = m_data
                     logging.info('RECV: %r', m_message)
