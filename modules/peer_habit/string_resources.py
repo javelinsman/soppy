@@ -51,3 +51,20 @@ REGISTRATION_COMPLETE = '응답해주셔서 감사합니다. 이제 내일(수�
 BOWWOWS = ['멍', '머엉', '머어엉']
 
 WRONG_RESPONSE = '잘못된 응답입니다. 다시 입력해주세요.'
+
+
+
+"""
+ADMIN
+"""
+ADMIN_COMMAND_PREFIX = '.'
+ADMIN_COMMAND_NOTICE = '공지'
+REPORT_NOTICE_COMPLETE = '%s명에게 공지를 완료했습니다.'
+ADMIN_COMMAND_LIST_USERS = '유저목록'
+
+ADMIN_COMMAND_MAKE_PAIR = '페어'
+INVALID_CONTEXT = '잘못된 context가 포함되어 있습니다.'
+INVALID_CONDITION = '잘못된 실험 조건입니다.'
+START_INSTRUCTION_CONTROL = '컨트롤 시작'
+START_INSTRUCTION_PSEUDO = '수도 시작'
+START_INSTRUCTION_REAL = '레알 시작'

@@ -8,6 +8,7 @@ This module contains
 
 import logging
 import random
+import json
 
 
 from modules.peer_habit import string_resources as sr
@@ -72,8 +73,83 @@ class ModulePeerHabit(Module):
 
     def execute_admin_command(self, message):
         "executes commands entered in the admin room"
-        pass
-    
+        context = message["context"]
+        try:
+            if message["type"] == 'text' and \
+               message["data"]["text"].startswith(sr.ADMIN_COMMAND_PREFIX):
+                print(1111)
+                text = message["data"]["text"]
+                text = text[len(sr.ADMIN_COMMAND_PREFIX):]
+                args = text.split()
+                if args[0] == sr.ADMIN_COMMAND_NOTICE:
+                    content = text[len(args[0]):].strip()
+                    cnt = 0
+                    for target_context in self.user.list_of_users():
+                        self.send_text(target_context, content)
+                        cnt += 1
+                    self.send_text(context, sr.REPORT_NOTICE_COMPLETE % cnt)
+                elif args[0] == sr.ADMIN_COMMAND_LIST_USERS:
+                    user_profiles = []
+                    for target_context in self.user.list_of_users():
+                        user_profiles.append(self.user.brief_info(target_context))
+                    self.send_text(
+                        context,
+                        '\n'.join('[%s] %s' % (i, j) for i, j in enumerate(user_profiles))
+                        )
+                elif args[0] == sr.ADMIN_COMMAND_MAKE_PAIR:
+                    ctx1, ctx2 = map(self.parse_context, args[1:3])
+                    condition = args[3].upper()
+                    if not (self.user.membership_test(ctx1) and self.user.membership_test(ctx2)):
+                        self.send_text(context, sr.INVALID_CONTEXT)
+                        return
+                    if condition not in ['CONTROL', 'PSEUDO', 'REAL']:
+                        self.send_text(context, sr.INVALID_CONDITION)
+                        return
+                    self.user.partner(ctx1, ctx2)
+                    self.user.partner(ctx2, ctx1)
+                    self.user.condition(ctx1, condition)
+                    self.user.condition(ctx2, condition)
+                    self.send_text(ctx1, getattr(sr, 'START_INSTRUCTION_%s' % condition))
+                    self.send_text(ctx2, getattr(sr, 'START_INSTRUCTION_%s' % condition))
+        except Exception as err: # pylint: disable=broad-except
+            self.send_text(context, 'Error: %r' % err)
+
+        """
+        if message["type"] == 'callback_query':
+            self.answer_callback_query(
+                message["data"]["callback_query_id"],
+                '응답이 기록되었습니다. 잘못 누르신 경우 1분 내에 다시 눌러주세요.')
+        self.send({
+            "type": "markup_text",
+            "context": {"chat_id": bot_config.ADMIN},
+            "data": {
+                "text": '좋은 아침이에요! 오늘도 힘내서 일일 목표 달성해주세요!\n\n푸시업 45개, 레그레이즈 45개\n\n언제든 달성하고 나면 아래의 버튼을 눌러주세요.',
+                "reply_markup": json.dumps({"inline_keyboard": [[
+                    {"text": '0%', "callback_data": '1234567890123456789012345678901234567890123456789012345678901234'},
+                    {"text": '25%', "callback_data": '25'},
+                    {"text": '50%', "callback_data": '50'},
+                    {"text": '75%', "callback_data": '75'},
+                    {"text": '100%', "callback_data": '100'},
+                ]]})
+                }
+            })
+
+        self.send({
+            "type": "markup_text",
+            "context": {"chat_id": bot_config.ADMIN},
+            "data": {
+                "text": '파트너인 키 큰 형광 코끼리님에게서 오늘의 응답이 도착했어요!\n\n70%\n\n키 큰 형광 코끼리님을 위한 피드백을 보내주세요.',
+                "reply_markup": json.dumps({"inline_keyboard": [
+                    [{"text": '최고예요', "callback_data": '0'}],
+                    [{"text": '멋져요', "callback_data": '25'}],
+                    [{"text": '잘 하고 있어요', "callback_data": '50'}],
+                    [{"text": '힘내세요', "callback_data": '75'}],
+                    [{"text": '포기하지 말아요', "callback_data": '100'}],
+                ]})
+                }
+            })
+            """
+
     def state_asked_goal_type(self, message):
         context = message["context"]
         if message["type"] != 'text' or message["data"]["text"] not in ['1', '2', '3', '4']:

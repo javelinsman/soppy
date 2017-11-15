@@ -19,6 +19,8 @@ class User:
             "age": 'user-age:%s',
             "sex": 'user-sex:%s',
             "push_enable": 'user-push-enable:%s',
+            "partner": 'user-partner:%s',
+            "condition": 'user-condition:%s',
             "registered_users": 'user-registered-users',
             "registration_keys": 'user-registration-keys',
             }
@@ -94,6 +96,18 @@ class User:
 
     def push_enable(self, *args, **kwargs):
         return self.getset('push_enable', *args, **kwargs)
+
+    def condition(self, *args, **kwargs):
+        return self.getset('condition', *args, **kwargs)
+
+    def partner(self, context, value=None):
+        serialized = Module.serialize_context(context)
+        state_key = self.key["partner"] % serialized
+        if value is None:
+            result = self.db.get(state_key)
+            return None if result == '' else Module.parse_context(result)
+        else:
+            self.db.set(state_key, value)
 
     def brief_info(self, context):
         return '; '.join([
