@@ -61,12 +61,12 @@ class ModulePeerHabit(Module):
             logging.error('This clause should never be executed!')
 
     def session_routine(self, message):
-        "manages sessions at 9 and 22 o' clock"
+        "manages sessions at 9 and 22 o' clock and handles bots"
         current_time = json.loads(message["data"]["time"])
-        year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
+        year, _month, _day, hour, _minute, second, _wday, yday = current_time[:8]
+        if second % 60 not in [0, 1]:
+            return
         absolute_day = (year-2000) * 400 + yday
-        absolute_day = 8028
-        hour = 9
         for context in self.user.list_of_users():
             if self.user.condition(context) is not None:
                 if hour >= 9 and self.user.last_morning_routine(context) < absolute_day:
@@ -77,50 +77,42 @@ class ModulePeerHabit(Module):
                     self.reminder_routine(context, absolute_day)
         for bot_pk in self.robot.list_of_robots():
             if self.robot.partner(bot_pk) is not None:
-                #TODO random time
                 if hour >= 9 and self.robot.last_first_try(bot_pk) < absolute_day:
-                    self.robot.last_first_try(bot_pk, absolute_day)
-                    self.robot_response_try(bot_pk, absolute_day)
+                    if random.random() < 0.025:
+                        self.robot.last_first_try(bot_pk, absolute_day)
+                        self.robot_response_try(bot_pk, absolute_day)
                 elif hour >= 22 and self.robot.last_second_try(bot_pk) < absolute_day:
-                    self.robot.last_second_try(bot_pk, absolute_day)
-                    self.robot_response_try(bot_pk, absolute_day)
+                    if random.random() < 0.025:
+                        self.robot.last_second_try(bot_pk, absolute_day)
+                        self.robot_response_try(bot_pk, absolute_day)
                 if hour >= 9 and self.robot.last_feedback_try(bot_pk) < absolute_day:
-                    self.robot.last_feedback_try(bot_pk, absolute_day)
-                    self.robot_feedback_try(bot_pk, absolute_day)
+                    if random.random() < 0.025:
+                        self.robot.last_feedback_try(bot_pk, absolute_day)
+                        self.robot_feedback_try(bot_pk, absolute_day)
 
     def robot_response_try(self, bot_pk, absolute_day):
         "robot tries one challenge"
-        print("robot tries!")
         prob = self.robot.prob(bot_pk)
         mean = self.robot.mean(bot_pk)
         sigma = self.robot.sigma(bot_pk)
         score = self.robot.score(bot_pk, absolute_day)
         if random.random() < prob:
-            print("GOGOGO")
             added = random.normalvariate(mean, sigma)
             new_score = min(score+added, 100)
-            print("new score becomes", new_score)
             if int(score/25) != int(new_score/25):
                 value = int(new_score/25)*25
-                print("value", value)
-                self.robot.response(bot_pk, absolute_day, value)
-                partner = self.robot.partner(bot_pk)
-                self.send_text(partner, '%s%%' % value)
+                self.record_and_share_response_bot(bot_pk, value, absolute_day)
             self.robot.score(bot_pk, absolute_day, new_score)
-        else:
-            print("NO")
 
     def robot_feedback_try(self, bot_pk, absolute_day):
         "robot tries feedback"
         prob = self.robot.prob(bot_pk)
         partner = self.robot.partner(bot_pk)
-        print('feedback try')
         if random.random() < prob:
-            print('yes!')
             yesterday_response = self.user.response(partner, absolute_day-1)
             if yesterday_response is not None:
-                ind = self.robot.evaluate_feedback(yesterday_response)
-                self.send_text(partner, '%s' % sr.FEEDBACKS[ind])
+                value = self.robot.evaluate_feedback(yesterday_response)
+                self.record_and_share_feedback_bot(bot_pk, value, absolute_day-1)
 
     def morning_routine(self, context, absolute_day):
         "at 9 o'clock, gives summary and feedback, today's achievement message"
@@ -140,7 +132,7 @@ class ModulePeerHabit(Module):
             yesterday_response = self.user.response(context, absolute_day-1)
             if yesterday_response is not None:
                 ind = self.robot.evaluate_feedback(yesterday_response)
-                self.send_text(context, '%s' % sr.FEEDBACKS[ind])
+                self.send_text(context, sr.FEEDBACK_EVALUATED % sr.FEEDBACKS[ind])
         else:
             callback_base = 'feedback;%s;%s;' % (absolute_day-1, serialized) + '%d'
             if condition == 'PSEUDO':
@@ -189,7 +181,8 @@ class ModulePeerHabit(Module):
         self.user.last_response_day(context, absolute_day)
         if self.user.condition(context) == 'REAL':
             partner = self.user.partner(context)
-            self.send_text(partner, '%s%%' % value)
+            self.send_text(partner, sr.RESPONSE_ARRIVED % (
+                self.user.nick(context), value))
 
     def record_and_share_feedback(self, context, value, absolute_day):
         "record context's feedback to partner if it exists"
@@ -197,9 +190,25 @@ class ModulePeerHabit(Module):
             self.user.feedback(context, absolute_day, value)
             if self.user.condition(context) == 'REAL':
                 partner = self.user.partner(context)
-                self.send_text(partner, sr.FEEDBACKS[value])
+                self.send_text(partner, sr.FEEDBACK_ARRIVED % (
+                    self.user.nick(context), sr.FEEDBACKS[value]))
             return True
         return False
+
+    def record_and_share_response_bot(self, bot_pk, value, absolute_day):
+        "for bot"
+        self.robot.response(bot_pk, absolute_day, value)
+        partner = self.robot.partner(bot_pk)
+        self.send_text(partner, sr.RESPONSE_ARRIVED % (
+            self.robot.nick(bot_pk), value))
+
+    def record_and_share_feedback_bot(self, bot_pk, value, absolute_day):
+        "for bot"
+        self.robot.feedback(bot_pk, absolute_day, value)
+        partner = self.robot.partner(bot_pk)
+        self.send_text(partner, sr.FEEDBACK_ARRIVED % (
+            self.robot.nick(bot_pk), sr.FEEDBACKS[value]))
+
 
     def execute_user_command(self, message):
         "executes commands entered in user's chat"
@@ -215,15 +224,15 @@ class ModulePeerHabit(Module):
             absolute_day, value = map(int, (absolute_day, value))
             if callback_type == 'feedback':
                 if self.record_and_share_feedback(context, value, absolute_day):
-                    answer('피드백이 기록되고 공유되었습니다: %s' % sr.FEEDBACKS[value])
+                    answer(sr.FEEDBACK_RECORDED_AND_SHARED % sr.FEEDBACKS[value])
                 else:
-                    answer('이미 피드백을 기록하셨습니다.')
+                    answer(sr.FEEDBACK_ALREADY_RECORDED)
             elif callback_type == 'response':
                 self.record_and_share_response(context, value, absolute_day)
                 if self.user.condition(context) == 'CONTROL':
-                    answer('응답이 기록되었습니다: %s%%' % value)
+                    answer(sr.RESPONSE_RECORDED % value)
                 else:
-                    answer('응답이 기록되고 공유되었습니다: %s%%' % value)
+                    answer(sr.RESPONSE_RECORDED_AND_SHARED % value)
         else:
             self.send_text(context, random.choice(sr.BOWWOWS))
 
@@ -296,15 +305,8 @@ class ModulePeerHabit(Module):
         except Exception as err: # pylint: disable=broad-except
             self.send_text(context, 'Error: %r' % err)
 
-        """
-        if message["type"] == 'callback_query':
-            self.answer_callback_query(
-                message["data"]["callback_query_id"],
-                '응답이 기록되었습니다. 잘못 누르신 경우 1분 내에 다시 눌러주세요.')
-
-            """
-
     def state_asked_goal_type(self, message):
+        "state function"
         context = message["context"]
         if message["type"] != 'text' or message["data"]["text"] not in ['1', '2', '3', '4']:
             return
@@ -313,6 +315,7 @@ class ModulePeerHabit(Module):
         self.user.state(context, 'asked_goal_name')
 
     def state_asked_goal_name(self, message):
+        "state function"
         context = message["context"]
         if message["type"] != 'text':
             return
@@ -321,6 +324,7 @@ class ModulePeerHabit(Module):
         self.user.state(context, 'asked_difficulty')
 
     def state_asked_difficulty(self, message):
+        "state function"
         context = message["context"]
         if message["type"] != 'text' or message["data"]["text"] not in ['1', '2', '3', '4', '5']:
             self.send_text(context, sr.WRONG_RESPONSE)
@@ -330,6 +334,7 @@ class ModulePeerHabit(Module):
         self.user.state(context, 'asked_conscientiousness')
 
     def state_asked_conscientiousness(self, message):
+        "state function"
         context = message["context"]
         if message["type"] != 'text' or message["data"]["text"] not in ['1', '2', '3', '4']:
             self.send_text(context, sr.WRONG_RESPONSE)
@@ -339,6 +344,7 @@ class ModulePeerHabit(Module):
         self.user.state(context, 'asked_age')
 
     def state_asked_age(self, message):
+        "state function"
         context = message["context"]
         if message["type"] != 'text':
             self.send_text(context, sr.WRONG_RESPONSE)
@@ -348,6 +354,7 @@ class ModulePeerHabit(Module):
         self.user.state(context, 'asked_sex')
 
     def state_asked_sex(self, message):
+        "state function"
         context = message["context"]
         if message["type"] != 'text' or message["data"]["text"] not in ['1', '2']:
             self.send_text(context, sr.WRONG_RESPONSE)
@@ -357,6 +364,7 @@ class ModulePeerHabit(Module):
         self.user.state(context, 'asked_push_enable')
 
     def state_asked_push_enable(self, message):
+        "state function"
         context = message["context"]
         if message["type"] != 'text' or message["data"]["text"] not in ['1', '2']:
             self.send_text(context, sr.WRONG_RESPONSE)

@@ -55,15 +55,19 @@ WRONG_RESPONSE = '잘못된 응답입니다. 다시 입력해주세요.'
 REMINDER_FOR_RESPONSE = '오늘도 목표 달성하는 것 잊지 말아주세요!'
 
 
-FEEDBACKS = [
-    '포기하지 말아요',
-    '힘내세요',
-    '잘 하고 있어요',
-    '멋져요',
-    '최고예요']
+FEEDBACKS = ['포기하지 말아요', '힘내세요', '잘 하고 있어요', '멋져요', '최고예요']
 
 RESPONSE_INTRO = '오늘도 나를 가꾸는 한 걸음을 응원해요 :)\n\n%s\n\n언제든 달성하고 나면 아래의 버튼을 눌러주세요.'
 FEEDBACK_INTRO = '파트너인 %s님의 어제 성과에 대해 피드백을 보내주세요.'
+
+RESPONSE_RECORDED = '응답이 기록되었습니다: %s%%'
+RESPONSE_RECORDED_AND_SHARED = '응답이 기록되고 공유되었습니다: %s%%'
+FEEDBACK_RECORDED_AND_SHARED = '피드백이 기록되고 공유되었습니다: %s'
+FEEDBACK_ALREADY_RECORDED = '이미 피드백을 기록하셨습니다.'
+
+RESPONSE_ARRIVED = '파트너인 %s님께서 실천 내역을 공유했어요: %s%%'
+FEEDBACK_ARRIVED = '파트너인 %s님께서 참가자님의 어제 활동에 대한 피드백을 보내셨어요.\n[%s]'
+FEEDBACK_EVALUATED = '어제의 성과에 대해 계산된 피드백: %s'
 
 
 """
