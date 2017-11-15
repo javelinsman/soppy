@@ -10,17 +10,6 @@ class User:
     def __init__(self, parent):
         self.db = parent.db #pylint: disable=invalid-name
         self.key = {
-            "state": 'user-state:%s',
-            "nick": 'user-nick:%s',
-            "goal_type": 'user-goal-type:%s',
-            "goal_name": 'user-goal-name:%s',
-            "difficulty": 'user-difficulty:%s',
-            "conscientiousness": 'user-conscientiousness:%s',
-            "age": 'user-age:%s',
-            "sex": 'user-sex:%s',
-            "push_enable": 'user-push-enable:%s',
-            "partner": 'user-partner:%s',
-            "condition": 'user-condition:%s',
             "registered_users": 'user-registered-users',
             "registration_keys": 'user-registration-keys',
             }
@@ -30,6 +19,7 @@ class User:
         return self.db.sismember(self.key["registered_users"], Module.serialize_context(context))
 
     def random_name(self):
+        "generate random name"
         a = ['멋쟁이', '귀여운', '커다란', '키 큰', '사려깊은', '활발한', '지적인', '용맹한', '개구장이', '여유로운']
         b = ['붉은', '푸른', '보랏빛', '주황', '초록', '하늘색', '핑크', '노랑', '형광', '투명']
         c = ['조랑말', '들소', '맘모스', '코끼리', '판다곰', '독수리', '호랑이', '사자', '반달곰', '돌고래']
@@ -61,55 +51,79 @@ class User:
         "check if the key is the registration key"
         return key == '연구참가'
 
-    def getset(self, varname, context, value=None):
+    def getset(self, varname, context, value=None, **kwargs):
+        "getset function for simple key-value pair"
         serialized = Module.serialize_context(context)
-        state_key = self.key[varname] % serialized
+        state_key = 'user-%s:%s' % (varname.replace('_', '-'), serialized)
         if value is None:
             result = self.db.get(state_key)
-            return None if result == '' else result
+            if result == '':
+                if 'default' in kwargs:
+                    return kwargs["default"]
+                return None
+            else:
+                if 'wrap' in kwargs:
+                    return kwargs["wrap"](result)
+                return result
+
         else:
             self.db.set(state_key, value)
 
     def state(self, *args, **kwargs):
+        "user state"
         return self.getset('state', *args, **kwargs)
 
     def nick(self, *args, **kwargs):
+        "nickname"
         return self.getset('nick', *args, **kwargs)
 
     def goal_type(self, *args, **kwargs):
+        "type of the goal: 1, 2, 3, or 4"
         return self.getset('goal_type', *args, **kwargs)
 
     def goal_name(self, *args, **kwargs):
+        "name of the goal"
         return self.getset('goal_name', *args, **kwargs)
 
     def difficulty(self, *args, **kwargs):
+        "subjective difficulty of the goal"
         return self.getset('difficulty', *args, **kwargs)
 
     def conscientiousness(self, *args, **kwargs):
+        "subjective perceived conscientiousness of the user"
         return self.getset('conscientiousness', *args, **kwargs)
 
     def age(self, *args, **kwargs):
+        "age of the user"
         return self.getset('age', *args, **kwargs)
 
     def sex(self, *args, **kwargs):
+        "sex of the user"
         return self.getset('sex', *args, **kwargs)
 
     def push_enable(self, *args, **kwargs):
+        "whether push notification is enabled or not"
         return self.getset('push_enable', *args, **kwargs)
 
     def condition(self, *args, **kwargs):
+        "experimental condition"
         return self.getset('condition', *args, **kwargs)
 
-    def partner(self, context, value=None):
-        serialized = Module.serialize_context(context)
-        state_key = self.key["partner"] % serialized
-        if value is None:
-            result = self.db.get(state_key)
-            return None if result == '' else Module.parse_context(result)
-        else:
-            self.db.set(state_key, value)
+    def partner(self, *args, **kwargs):
+        "experimental partner"
+        return self.getset('partner', *args, **kwargs, wrap=Module.serialize_context)
+
+    def last_morning_routine(self, *args, **kwargs):
+        "the last day that morning routine was performed"
+        return self.getset('last_morning_routine', *args, **kwargs, default=0, wrap=int)
+
+    def last_reminder_routine(self, *args, **kwargs):
+        "the last day that reminder routine was performed"
+        return self.getset('last_reinder_routine', *args, **kwargs, default=0, wrap=int)
+
 
     def brief_info(self, context):
+        "brief information of the user"
         return '; '.join([
             'context: %r' % Module.serialize_context(context),
             'nick: %r' % self.nick(context),
