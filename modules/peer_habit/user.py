@@ -108,6 +108,10 @@ class User:
         "whether push notification is enabled or not"
         return self.getset('push_enable', *args, **kwargs)
 
+    def robot(self, *args, **kwargs):
+        "partner robot bot_pk if PSEUDO"
+        return self.getset('robot', *args, **kwargs)
+
     def condition(self, *args, **kwargs):
         "experimental condition"
         return self.getset('condition', *args, **kwargs)

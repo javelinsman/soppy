@@ -13,6 +13,7 @@ import json
 
 from modules.peer_habit import string_resources as sr
 from modules.peer_habit.user import User
+from modules.peer_habit.robot import Robot
 from modules.peer_habit.session import Session
 from basic.module import Module
 
@@ -23,6 +24,7 @@ class ModulePeerHabit(Module):
     def __init__(self):
         super().__init__(__name__)
         self.user = User(self)
+        self.robot = Robot(self)
         self.session = Session(self)
 
     def send_text(self, context, text):
@@ -63,7 +65,7 @@ class ModulePeerHabit(Module):
         current_time = json.loads(message["data"]["time"])
         year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
         absolute_day = (year-2000) * 400 + yday
-        absolute_day = 8011
+        absolute_day = 8014
         hour = 9
         for context in self.user.list_of_users():
             if self.user.condition(context) is not None:
@@ -81,8 +83,12 @@ class ModulePeerHabit(Module):
         serialized = self.serialize_context(context)
 
         if condition in ['PSEUDO', 'REAL']:
-            partner = self.user.partner(context)
-            self.send_text(context, self.user.summary(partner, absolute_day-1))
+            if condition == 'PSEUDO':
+                bot_pk = self.user.robot(context)
+                self.send_text(context, self.robot.summary(bot_pk, absolute_day-1))
+            elif condition == 'REAL':
+                partner = self.user.partner(context)
+                self.send_text(context, self.user.summary(partner, absolute_day-1))
 
         if condition == 'CONTROL':
             yesterday_response = self.user.response(context, absolute_day-1)
@@ -90,11 +96,15 @@ class ModulePeerHabit(Module):
                 self.send_text(context, '%s [최고예요]' % yesterday_response)
         else:
             callback_base = 'feedback;%s;%s;' % (absolute_day-1, serialized) + '%d'
+            if condition == 'PSEUDO':
+                nick = self.robot.nick(self.user.robot(context))
+            else:
+                nick = self.user.nick(self.user.partner(context))
             self.send({
                 "type": "markup_text",
                 "context": context,
                 "data": {
-                    "text": sr.FEEDBACK_INTRO % self.user.nick(partner),
+                    "text": sr.FEEDBACK_INTRO % nick,
                     "reply_markup": json.dumps({"inline_keyboard": [
                         [{"text": sr.FEEDBACKS[4], "callback_data": callback_base % 4}],
                         [{"text": sr.FEEDBACKS[3], "callback_data": callback_base % 3}],
@@ -129,7 +139,7 @@ class ModulePeerHabit(Module):
         "record context's reponse and share it if partner exists"
         self.user.response(context, absolute_day, value)
         self.user.last_response_day(context, absolute_day)
-        if self.user.condition(context) != 'CONTROL':
+        if self.user.condition(context) == 'REAL':
             partner = self.user.partner(context)
             self.send_text(partner, '%s%%' % value)
 
@@ -137,8 +147,9 @@ class ModulePeerHabit(Module):
         "record context's feedback to partner if it exists"
         if self.user.feedback(context, absolute_day) is None:
             self.user.feedback(context, absolute_day, value)
-            partner = self.user.partner(context)
-            self.send_text(partner, sr.FEEDBACKS[value])
+            if self.user.condition(context) == 'REAL':
+                partner = self.user.partner(context)
+                self.send_text(partner, sr.FEEDBACKS[value])
             return True
         return False
 
@@ -184,6 +195,9 @@ class ModulePeerHabit(Module):
                         self.send_text(target_context, content)
                         cnt += 1
                     self.send_text(context, sr.REPORT_NOTICE_COMPLETE % cnt)
+                elif args[0] == sr.ADMIN_COMMAND_CREATE_ROBOT:
+                    bot_pk = self.robot.create_robot()
+                    self.send_text(context, self.robot.brief_info(bot_pk))
                 elif args[0] == sr.ADMIN_COMMAND_LIST_USERS:
                     user_profiles = []
                     for target_context in self.user.list_of_users():
@@ -191,23 +205,41 @@ class ModulePeerHabit(Module):
                     user_profiles = ['[%s] %s' % (i, j) for i, j in enumerate(user_profiles)]
                     for i in range(0, len(user_profiles), 10):
                         self.send_text(context, '\n'.join(user_profiles[i:i+10]))
+                elif args[0] == sr.ADMIN_COMMAND_LIST_ROBOTS:
+                    robot_profiles = []
+                    for bot_pk in self.robot.list_of_robots():
+                        robot_profiles.append(self.robot.brief_info(bot_pk))
+                    robot_profiles = ['[R%s] %s' % (i, j) for i, j in enumerate(robot_profiles)]
+                    for i in range(0, len(robot_profiles), 10):
+                        self.send_text(context, '\n'.join(robot_profiles[i:i+10]))
                 elif args[0] == sr.ADMIN_COMMAND_MAKE_PAIR:
-                    ctx1, ctx2 = map(self.parse_context, args[1:3])
-                    condition = args[3].upper()
+                    condition = args[1].upper()
                     if condition == 'CONTROL':
-                        if self.user.membership_test(ctx1):
-                            self.user.condition(ctx1, condition)
-                            self.send_text(ctx1, getattr(sr, 'START_INSTRUCTION_%s' % condition))
+                        ctx = self.parse_context(args[2])
+                        if self.user.membership_test(ctx):
+                            self.user.condition(ctx, condition)
+                            self.send_text(ctx, sr.START_INSTRUCTION_CONTROL)
                         else:
                             self.send_text(context, sr.INVALID_CONTEXT)
-                    elif condition in ['PSEUDO', 'REAL']:
+                    elif condition == 'PSEUDO':
+                        ctx = self.parse_context(args[2])
+                        bot_pk = args[3]
+                        if self.user.membership_test(ctx) and self.robot.membership_test(bot_pk):
+                            self.user.condition(ctx, condition)
+                            self.user.robot(ctx, bot_pk)
+                            self.robot.partner(bot_pk, ctx)
+                            self.send_text(ctx, sr.START_INSTRUCTION_PSEUDO)
+                        else:
+                            self.send_text(context, sr.INVALID_CONTEXT)
+                    elif condition == 'REAL':
+                        ctx1, ctx2 = map(self.parse_context, args[2:4])
                         if self.user.membership_test(ctx1) and self.user.membership_test(ctx2):
                             self.user.partner(ctx1, ctx2)
                             self.user.partner(ctx2, ctx1)
                             self.user.condition(ctx1, condition)
                             self.user.condition(ctx2, condition)
-                            self.send_text(ctx1, getattr(sr, 'START_INSTRUCTION_%s' % condition))
-                            self.send_text(ctx2, getattr(sr, 'START_INSTRUCTION_%s' % condition))
+                            self.send_text(ctx1, sr.START_INSTRUCTION_REAL)
+                            self.send_text(ctx2, sr.START_INSTRUCTION_REAL)
                         else:
                             self.send_text(context, sr.INVALID_CONTEXT)
                     else:
