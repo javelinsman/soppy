@@ -29,7 +29,10 @@ class Timer(threading.Thread):
                 "context": {"chat_id": -1, "author_id": -1},
                 "data": {"time": json.dumps(time.localtime())}
                 }
-            self.database.publish('channel-from-interface-to-module', json.dumps(message))
+            if bot_config.DEBUG:
+                self.database.publish('debug-channel-from-interface-to-module', json.dumps(message))
+            else:
+                self.database.publish('channel-from-interface-to-module', json.dumps(message))
             time.sleep(2)
 
     def shutdown(self):
