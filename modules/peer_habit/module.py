@@ -63,7 +63,7 @@ class ModulePeerHabit(Module):
         current_time = json.loads(message["data"]["time"])
         year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
         absolute_day = (year-2000) * 400 + yday
-        absolute_day = 8001
+        absolute_day = 8003
         hour = 9
         for context in self.user.list_of_users():
             if self.user.condition(context) is not None:
@@ -76,14 +76,29 @@ class ModulePeerHabit(Module):
 
     def morning_routine(self, context, absolute_day):
         "at 9 o'clock, gives summary and feedback, today's achievement message"
-        partner = self.user.partner(context)
-        condition = self.user.condition(context)
         self.send_text(context, self.user.summary(context, absolute_day-1))
-        self.send_text(context, self.user.summary(partner, absolute_day-1))
+        condition = self.user.condition(context)
+        if condition != 'CONTROL':
+            partner = self.user.partner(context)
+            self.send_text(context, self.user.summary(partner, absolute_day-1))
         if condition == 'CONTROL':
-            pass
+            self.send_text(context, '[최고예요]')
         else:
-            pass
+            self.send({
+                "type": "markup_text",
+                "context": context,
+                "data": {
+                    "text": '파트너인 키 큰 형광 코끼리의 어제 성과에 대해 피드백을 보내주세요.',
+                    "reply_markup": json.dumps({"inline_keyboard": [
+                        [{"text": '최고예요', "callback_data": '0'}],
+                        [{"text": '멋져요', "callback_data": '25'}],
+                        [{"text": '잘 하고 있어요', "callback_data": '50'}],
+                        [{"text": '힘내세요', "callback_data": '75'}],
+                        [{"text": '포기하지 말아요', "callback_data": '100'}],
+                    ]})
+                    }
+                })
+
 
         self.send({
             "type": "markup_text",
@@ -160,20 +175,6 @@ class ModulePeerHabit(Module):
                 message["data"]["callback_query_id"],
                 '응답이 기록되었습니다. 잘못 누르신 경우 1분 내에 다시 눌러주세요.')
 
-        self.send({
-            "type": "markup_text",
-            "context": {"chat_id": bot_config.ADMIN},
-            "data": {
-                "text": '파트너인 키 큰 형광 코끼리님에게서 오늘의 응답이 도착했어요!\n\n70%\n\n키 큰 형광 코끼리님을 위한 피드백을 보내주세요.',
-                "reply_markup": json.dumps({"inline_keyboard": [
-                    [{"text": '최고예요', "callback_data": '0'}],
-                    [{"text": '멋져요', "callback_data": '25'}],
-                    [{"text": '잘 하고 있어요', "callback_data": '50'}],
-                    [{"text": '힘내세요', "callback_data": '75'}],
-                    [{"text": '포기하지 말아요', "callback_data": '100'}],
-                ]})
-                }
-            })
             """
 
     def state_asked_goal_type(self, message):
