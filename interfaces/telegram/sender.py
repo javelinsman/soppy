@@ -36,6 +36,7 @@ class InterfaceTelegramSender(threading.Thread):
                     break
                 message = json.loads(message["data"].decode('utf-8'))
                 self.message_queues[message["context"]["chat_id"]].put(message)
+            send_count = 0
             # Secondly, send one message for each chat_id's
             for chat_id, message_queue in list(self.message_queues.items()):
                 if not message_queue.empty():
@@ -50,6 +51,9 @@ class InterfaceTelegramSender(threading.Thread):
                         self.send_image(chat_id, message["data"]["file_ids"][-1])
                     elif message["type"] == 'document':
                         self.send_document(chat_id, message["data"]["file_id"])
+                    send_count += 1
+                    if send_count % 10 == 0:
+                        time.sleep(1)
 
             time.sleep(1)
 
