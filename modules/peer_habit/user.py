@@ -119,8 +119,11 @@ class User:
 
     def last_reminder_routine(self, *args, **kwargs):
         "the last day that reminder routine was performed"
-        return self.getset('last_reinder_routine', *args, **kwargs, default=0, wrap=int)
+        return self.getset('last_reminder_routine', *args, **kwargs, default=0, wrap=int)
 
+    def last_response_day(self, *args, **kwargs):
+        "the last day that the user sent response"
+        return self.getset('last_response_day', *args, **kwargs, default=0, wrap=int)
 
     def brief_info(self, context):
         "brief information of the user"
