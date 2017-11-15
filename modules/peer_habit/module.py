@@ -63,7 +63,7 @@ class ModulePeerHabit(Module):
         current_time = json.loads(message["data"]["time"])
         year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
         absolute_day = (year-2000) * 400 + yday
-        absolute_day = 8003
+        absolute_day = 8004
         hour = 9
         for context in self.user.list_of_users():
             if self.user.condition(context) is not None:
@@ -78,39 +78,43 @@ class ModulePeerHabit(Module):
         "at 9 o'clock, gives summary and feedback, today's achievement message"
         self.send_text(context, self.user.summary(context, absolute_day-1))
         condition = self.user.condition(context)
-        if condition != 'CONTROL':
+        serialized = self.serialize_context(context)
+
+        if condition in ['PSEUDO', 'REAL']:
             partner = self.user.partner(context)
             self.send_text(context, self.user.summary(partner, absolute_day-1))
+
         if condition == 'CONTROL':
             self.send_text(context, '[최고예요]')
         else:
+            callback_base = 'feedback;%s;%s;' % (absolute_day-1, serialized) + '%d'
             self.send({
                 "type": "markup_text",
                 "context": context,
                 "data": {
                     "text": '파트너인 키 큰 형광 코끼리의 어제 성과에 대해 피드백을 보내주세요.',
                     "reply_markup": json.dumps({"inline_keyboard": [
-                        [{"text": '최고예요', "callback_data": '0'}],
-                        [{"text": '멋져요', "callback_data": '25'}],
-                        [{"text": '잘 하고 있어요', "callback_data": '50'}],
-                        [{"text": '힘내세요', "callback_data": '75'}],
-                        [{"text": '포기하지 말아요', "callback_data": '100'}],
+                        [{"text": '최고예요', "callback_data": callback_base % 4}],
+                        [{"text": '멋져요', "callback_data": callback_base % 3}],
+                        [{"text": '잘 하고 있어요', "callback_data": callback_base % 2}],
+                        [{"text": '힘내세요', "callback_data": callback_base % 1}],
+                        [{"text": '포기하지 말아요', "callback_data": callback_base % 0}],
                     ]})
                     }
                 })
 
-
+        callback_base = 'response;%s;%s;' % (absolute_day, serialized) + '%d'
         self.send({
             "type": "markup_text",
             "context": context,
             "data": {
-                "text": '좋은 아침이에요! 오늘도 힘내서 일일 목표 달성해주세요!\n\n푸시업 45개, 레그레이즈 45개\n\n언제든 달성하고 나면 아래의 버튼을 눌러주세요.',
+                "text": '오늘도 힘내서 일일 목표 달성해주세요!\n\n푸시업 45개, 레그레이즈 45개\n\n언제든 달성하고 나면 아래의 버튼을 눌러주세요.',
                 "reply_markup": json.dumps({"inline_keyboard": [[
-                    {"text": '0%', "callback_data": '0'},
-                    {"text": '25%', "callback_data": '25'},
-                    {"text": '50%', "callback_data": '50'},
-                    {"text": '75%', "callback_data": '75'},
-                    {"text": '100%', "callback_data": '100'},
+                    {"text": '0%', "callback_data": callback_base % 0},
+                    {"text": '25%', "callback_data": callback_base % 25},
+                    {"text": '50%', "callback_data": callback_base % 50},
+                    {"text": '75%', "callback_data": callback_base % 75},
+                    {"text": '100%', "callback_data": callback_base % 100},
                 ]]})
                 }
             })
@@ -125,6 +129,10 @@ class ModulePeerHabit(Module):
         state = self.user.state(context)
         if state is not None:
             getattr(self, 'state_' + state)(message)
+        elif message["type"] == 'callback_query':
+            callback_type, absolute_day, serialized, value = message["data"]["text"].split(';')
+            self.answer_callback_query(message["data"]["callback_query_id"],
+                                       '%r %r %r %r' % (callback_type, absolute_day, serialized, value))
         else:
             self.send_text(context, random.choice(sr.BOWWOWS))
 
@@ -154,18 +162,25 @@ class ModulePeerHabit(Module):
                 elif args[0] == sr.ADMIN_COMMAND_MAKE_PAIR:
                     ctx1, ctx2 = map(self.parse_context, args[1:3])
                     condition = args[3].upper()
-                    if not (self.user.membership_test(ctx1) and self.user.membership_test(ctx2)):
-                        self.send_text(context, sr.INVALID_CONTEXT)
-                        return
-                    if condition not in ['CONTROL', 'PSEUDO', 'REAL']:
+                    if condition == 'CONTROL':
+                        if self.user.membership_test(ctx1):
+                            self.user.condition(ctx1, condition)
+                            self.send_text(ctx1, getattr(sr, 'START_INSTRUCTION_%s' % condition))
+                        else:
+                            self.send_text(context, sr.INVALID_CONTEXT)
+                    elif condition in ['PSEUDO', 'REAL']:
+                        if self.user.membership_test(ctx1) and self.user.membership_test(ctx2):
+                            self.user.partner(ctx1, ctx2)
+                            self.user.partner(ctx2, ctx1)
+                            self.user.condition(ctx1, condition)
+                            self.user.condition(ctx2, condition)
+                            self.send_text(ctx1, getattr(sr, 'START_INSTRUCTION_%s' % condition))
+                            self.send_text(ctx2, getattr(sr, 'START_INSTRUCTION_%s' % condition))
+                        else:
+                            self.send_text(context, sr.INVALID_CONTEXT)
+                    else:
                         self.send_text(context, sr.INVALID_CONDITION)
-                        return
-                    self.user.partner(ctx1, ctx2)
-                    self.user.partner(ctx2, ctx1)
-                    self.user.condition(ctx1, condition)
-                    self.user.condition(ctx2, condition)
-                    self.send_text(ctx1, getattr(sr, 'START_INSTRUCTION_%s' % condition))
-                    self.send_text(ctx2, getattr(sr, 'START_INSTRUCTION_%s' % condition))
+
         except Exception as err: # pylint: disable=broad-except
             self.send_text(context, 'Error: %r' % err)
 
