@@ -33,7 +33,7 @@ class User:
     def list_of_users(self):
         "returns the list of registrated users"
         users = self.db.smembers(self.key["registered_users"])
-        return sorted(list(map(Module.parse_context, users)))
+        return list(map(Module.parse_context, sorted(users)))
 
     def generate_new_registration_key(self):
         "make new key, insert to db, and return it"
@@ -67,7 +67,10 @@ class User:
                 return result
 
         else:
-            self.db.set(state_key, value)
+            if 'wrap_set' in kwargs:
+                self.db.set(state_key, kwargs["wrap_set"](value))
+            else:
+                self.db.set(state_key, value)
 
     def state(self, *args, **kwargs):
         "user state"
@@ -111,7 +114,8 @@ class User:
 
     def partner(self, *args, **kwargs):
         "experimental partner"
-        return self.getset('partner', *args, **kwargs, wrap=Module.serialize_context)
+        return self.getset('partner', *args, **kwargs,
+                           wrap=Module.parse_context, wrap_set=Module.serialize_context)
 
     def last_morning_routine(self, *args, **kwargs):
         "the last day that morning routine was performed"
@@ -138,3 +142,7 @@ class User:
             'sex: %r' % self.sex(context),
             'push_enable: %r' % self.push_enable(context),
             ])
+
+    def summary(self, context, absolute_day):
+        "summary of achievment with insights"
+        return 'summary for %d of %s' % (absolute_day, Module.serialize_context(context))

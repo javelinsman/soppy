@@ -63,18 +63,42 @@ class ModulePeerHabit(Module):
         current_time = json.loads(message["data"]["time"])
         year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
         absolute_day = (year-2000) * 400 + yday
-        hour = 10
+        absolute_day = 8001
+        hour = 9
         for context in self.user.list_of_users():
-            if hour >= 9 and self.user.last_morning_routine(context) < absolute_day:
-                self.user.last_morning_routine(context, absolute_day)
-                self.morning_routine(context, absolute_day)
-            elif hour >= 22 and self.user.last_reminder_routine(context) < absolute_day:
-                self.user.last_reminder_routine(context, absolute_day)
-                self.reminder_routine(context, absolute_day)
+            if self.user.condition(context) is not None:
+                if hour >= 9 and self.user.last_morning_routine(context) < absolute_day:
+                    self.user.last_morning_routine(context, absolute_day)
+                    self.morning_routine(context, absolute_day)
+                elif hour >= 22 and self.user.last_reminder_routine(context) < absolute_day:
+                    self.user.last_reminder_routine(context, absolute_day)
+                    self.reminder_routine(context, absolute_day)
 
     def morning_routine(self, context, absolute_day):
-        pass
+        "at 9 o'clock, gives summary and feedback, today's achievement message"
+        partner = self.user.partner(context)
+        condition = self.user.condition(context)
+        self.send_text(context, self.user.summary(context, absolute_day-1))
+        self.send_text(context, self.user.summary(partner, absolute_day-1))
+        if condition == 'CONTROL':
+            pass
+        else:
+            pass
 
+        self.send({
+            "type": "markup_text",
+            "context": context,
+            "data": {
+                "text": '좋은 아침이에요! 오늘도 힘내서 일일 목표 달성해주세요!\n\n푸시업 45개, 레그레이즈 45개\n\n언제든 달성하고 나면 아래의 버튼을 눌러주세요.',
+                "reply_markup": json.dumps({"inline_keyboard": [[
+                    {"text": '0%', "callback_data": '0'},
+                    {"text": '25%', "callback_data": '25'},
+                    {"text": '50%', "callback_data": '50'},
+                    {"text": '75%', "callback_data": '75'},
+                    {"text": '100%', "callback_data": '100'},
+                ]]})
+                }
+            })
     def reminder_routine(self, context, absolute_day):
         "send reminder if the user hasn't sent any response yet"
         if self.user.last_response_day(context) < absolute_day:
@@ -135,20 +159,6 @@ class ModulePeerHabit(Module):
             self.answer_callback_query(
                 message["data"]["callback_query_id"],
                 '응답이 기록되었습니다. 잘못 누르신 경우 1분 내에 다시 눌러주세요.')
-        self.send({
-            "type": "markup_text",
-            "context": {"chat_id": bot_config.ADMIN},
-            "data": {
-                "text": '좋은 아침이에요! 오늘도 힘내서 일일 목표 달성해주세요!\n\n푸시업 45개, 레그레이즈 45개\n\n언제든 달성하고 나면 아래의 버튼을 눌러주세요.',
-                "reply_markup": json.dumps({"inline_keyboard": [[
-                    {"text": '0%', "callback_data": '1234567890123456789012345678901234567890123456789012345678901234'},
-                    {"text": '25%', "callback_data": '25'},
-                    {"text": '50%', "callback_data": '50'},
-                    {"text": '75%', "callback_data": '75'},
-                    {"text": '100%', "callback_data": '100'},
-                ]]})
-                }
-            })
 
         self.send({
             "type": "markup_text",
