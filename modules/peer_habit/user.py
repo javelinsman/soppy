@@ -129,6 +129,14 @@ class User:
         "the last day that the user sent response"
         return self.getset('last_response_day', *args, **kwargs, default=0, wrap=int)
 
+    def response(self, context, absolute_day, value=None):
+        "response of the user"
+        return self.getset('response_of_%d' % absolute_day, context, value)
+
+    def feedback(self, context, absolute_day, value=None):
+        "feedback of the user"
+        return self.getset('feedback_of_%d' % absolute_day, context, value)
+
     def brief_info(self, context):
         "brief information of the user"
         return '; '.join([

@@ -63,7 +63,7 @@ class ModulePeerHabit(Module):
         current_time = json.loads(message["data"]["time"])
         year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
         absolute_day = (year-2000) * 400 + yday
-        absolute_day = 8004
+        absolute_day = 8005
         hour = 9
         for context in self.user.list_of_users():
             if self.user.condition(context) is not None:
@@ -123,13 +123,22 @@ class ModulePeerHabit(Module):
         if self.user.last_response_day(context) < absolute_day:
             self.send_text(context, sr.REMINDER_FOR_RESPONSE)
 
-    def record_and_share_response(self, context, value):
+    def record_and_share_response(self, context, value, absolute_day):
         "record context's reponse and share it if partner exists"
-        pass
+        self.user.response(context, absolute_day, value)
+        self.user.last_response_day(context, absolute_day)
+        if self.user.condition(context) != 'CONTROL':
+            partner = self.user.partner(context)
+            self.send_text(partner, '%s%%' % value)
 
-    def record_and_share_feedback(self, context, value):
+    def record_and_share_feedback(self, context, value, absolute_day):
         "record context's feedback to partner if it exists"
-        pass
+        if self.user.feedback(context, absolute_day) is None:
+            self.user.feedback(context, absolute_day, value)
+            partner = self.user.partner(context)
+            self.send_text(partner, sr.FEEDBACKS[value])
+            return True
+        return False
 
     def execute_user_command(self, message):
         "executes commands entered in user's chat"
@@ -144,10 +153,12 @@ class ModulePeerHabit(Module):
             callback_type, absolute_day, _serialized, value = message["data"]["text"].split(';')
             absolute_day, value = map(int, (absolute_day, value))
             if callback_type == 'feedback':
-                self.record_and_share_feedback(context, value)
-                answer('피드백이 기록되고 공유되었습니다: %s' % sr.FEEDBACKS[value])
+                if self.record_and_share_feedback(context, value, absolute_day):
+                    answer('피드백이 기록되고 공유되었습니다: %s' % sr.FEEDBACKS[value])
+                else:
+                    answer('이미 피드백을 기록하셨습니다.')
             elif callback_type == 'response':
-                self.record_and_share_response(context, value)
+                self.record_and_share_response(context, value, absolute_day)
                 if self.user.condition(context) == 'CONTROL':
                     answer('응답이 기록되었습니다: %s%%' % value)
                 else:
