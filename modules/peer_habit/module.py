@@ -59,23 +59,24 @@ class ModulePeerHabit(Module):
             logging.error('This clause should never be executed!')
 
     def session_routine(self, message):
-        "remind everyday 10, 11, 12 o'clock"
-        """
-        year, month, day = message["data"]["time"][0:3]
-        hour, minute, second = message["data"]["time"][3:6]
-        wday, yday = message["data"]["time"][6:8]
+        "manages sessions at 9 and 22 o' clock"
+        current_time = json.loads(message["data"]["time"])
+        year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
         absolute_day = (year-2000) * 400 + yday
+        hour = 10
         for context in self.user.list_of_users():
-            if 8 <= hour and self.user.asked_achievement_day(context) < absolute_day:
-                self.ask_achievement(context, absolute_day)
-            elif 22 <= hour and self.user.reminder_day(0, context) < absolute_day and \
-               self.user.responsed_achievment_day(context) < absolute_day:
-                self.send_reminder(0, context)
-            elif 23 <= hour and self.user.reminder_day(1, context) and \
-               self.user.responsed_achievment_day(context) < absolute_day:
-            elif self.user.reminder_day(2, context) and \
-               self.user.responsed_achievment_day(context) < absolute_day:
-        """
+            if hour >= 9 and self.user.last_morning_routine(context) < absolute_day:
+                self.user.last_morning_routine(context, absolute_day)
+                self.morning_routine(context, absolute_day)
+            elif hour >= 22 and self.user.last_reminder_routine(context) < absolute_day:
+                self.user.last_reminder_routine(context, absolute_day)
+                self.reminder_routine(context, absolute_day)
+
+    def morning_routine(self, context, absolute_day):
+        pass
+
+    def reminder_routine(self, context, absolute_day):
+        pass
 
     def execute_user_command(self, message):
         "executes commands entered in user's chat"
