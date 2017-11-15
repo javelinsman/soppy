@@ -43,7 +43,7 @@ class User:
     def list_of_users(self):
         "returns the list of registrated users"
         users = self.db.smembers(self.key["registered_users"])
-        return list(map(Module.parse_context, users))
+        return sorted(list(map(Module.parse_context, users)))
 
     def generate_new_registration_key(self):
         "make new key, insert to db, and return it"
