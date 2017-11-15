@@ -65,7 +65,7 @@ class ModulePeerHabit(Module):
         current_time = json.loads(message["data"]["time"])
         year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
         absolute_day = (year-2000) * 400 + yday
-        absolute_day = 8019
+        absolute_day = 8028
         hour = 9
         for context in self.user.list_of_users():
             if self.user.condition(context) is not None:
@@ -75,6 +75,52 @@ class ModulePeerHabit(Module):
                 elif hour >= 22 and self.user.last_reminder_routine(context) < absolute_day:
                     self.user.last_reminder_routine(context, absolute_day)
                     self.reminder_routine(context, absolute_day)
+        for bot_pk in self.robot.list_of_robots():
+            if self.robot.partner(bot_pk) is not None:
+                #TODO random time
+                if hour >= 9 and self.robot.last_first_try(bot_pk) < absolute_day:
+                    self.robot.last_first_try(bot_pk, absolute_day)
+                    self.robot_response_try(bot_pk, absolute_day)
+                elif hour >= 22 and self.robot.last_second_try(bot_pk) < absolute_day:
+                    self.robot.last_second_try(bot_pk, absolute_day)
+                    self.robot_response_try(bot_pk, absolute_day)
+                if hour >= 9 and self.robot.last_feedback_try(bot_pk) < absolute_day:
+                    self.robot.last_feedback_try(bot_pk, absolute_day)
+                    self.robot_feedback_try(bot_pk, absolute_day)
+
+    def robot_response_try(self, bot_pk, absolute_day):
+        "robot tries one challenge"
+        print("robot tries!")
+        prob = self.robot.prob(bot_pk)
+        mean = self.robot.mean(bot_pk)
+        sigma = self.robot.sigma(bot_pk)
+        score = self.robot.score(bot_pk, absolute_day)
+        if random.random() < prob:
+            print("GOGOGO")
+            added = random.normalvariate(mean, sigma)
+            new_score = min(score+added, 100)
+            print("new score becomes", new_score)
+            if int(score/25) != int(new_score/25):
+                value = int(new_score/25)*25
+                print("value", value)
+                self.robot.response(bot_pk, absolute_day, value)
+                partner = self.robot.partner(bot_pk)
+                self.send_text(partner, '%s%%' % value)
+            self.robot.score(bot_pk, absolute_day, new_score)
+        else:
+            print("NO")
+
+    def robot_feedback_try(self, bot_pk, absolute_day):
+        "robot tries feedback"
+        prob = self.robot.prob(bot_pk)
+        partner = self.robot.partner(bot_pk)
+        print('feedback try')
+        if random.random() < prob:
+            print('yes!')
+            yesterday_response = self.user.response(partner, absolute_day-1)
+            if yesterday_response is not None:
+                ind = self.robot.evaluate_feedback(yesterday_response)
+                self.send_text(partner, '%s' % sr.FEEDBACKS[ind])
 
     def morning_routine(self, context, absolute_day):
         "at 9 o'clock, gives summary and feedback, today's achievement message"
@@ -131,6 +177,7 @@ class ModulePeerHabit(Module):
                 ]]})
                 }
             })
+
     def reminder_routine(self, context, absolute_day):
         "send reminder if the user hasn't sent any response yet"
         if self.user.last_response_day(context) < absolute_day:

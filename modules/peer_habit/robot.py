@@ -91,6 +91,22 @@ class Robot:
         "std dev of normal dist."
         return self.getset('sigma', *args, **kwargs, wrap=float)
 
+    def last_first_try(self, *args, **kwargs):
+        "last first try"
+        return self.getset('last_first_try', *args, **kwargs, wrap=int, default=0)
+
+    def last_second_try(self, *args, **kwargs):
+        "last second try"
+        return self.getset('last_second_try', *args, **kwargs, wrap=int, default=0)
+
+    def last_feedback_try(self, *args, **kwargs):
+        "last feedback try"
+        return self.getset('last_feedback_try', *args, **kwargs, wrap=int, default=0)
+
+    def score(self, bot_pk, absolute_day, value=None):
+        "score of the robot"
+        return self.getset('score_of_%d' % absolute_day, bot_pk, value, wrap=float, default=0)
+
     def response(self, bot_pk, absolute_day, value=None):
         "response of the robot"
         return self.getset('response_of_%d' % absolute_day, bot_pk, value, wrap=int)
