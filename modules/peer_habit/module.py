@@ -94,11 +94,11 @@ class ModulePeerHabit(Module):
                 "data": {
                     "text": '파트너인 키 큰 형광 코끼리의 어제 성과에 대해 피드백을 보내주세요.',
                     "reply_markup": json.dumps({"inline_keyboard": [
-                        [{"text": '최고예요', "callback_data": callback_base % 4}],
-                        [{"text": '멋져요', "callback_data": callback_base % 3}],
-                        [{"text": '잘 하고 있어요', "callback_data": callback_base % 2}],
-                        [{"text": '힘내세요', "callback_data": callback_base % 1}],
-                        [{"text": '포기하지 말아요', "callback_data": callback_base % 0}],
+                        [{"text": sr.FEEDBACKS[4], "callback_data": callback_base % 4}],
+                        [{"text": sr.FEEDBACKS[3], "callback_data": callback_base % 3}],
+                        [{"text": sr.FEEDBACKS[2], "callback_data": callback_base % 2}],
+                        [{"text": sr.FEEDBACKS[1], "callback_data": callback_base % 1}],
+                        [{"text": sr.FEEDBACKS[0], "callback_data": callback_base % 0}],
                     ]})
                     }
                 })
@@ -123,6 +123,14 @@ class ModulePeerHabit(Module):
         if self.user.last_response_day(context) < absolute_day:
             self.send_text(context, sr.REMINDER_FOR_RESPONSE)
 
+    def record_and_share_response(self, context, value):
+        "record context's reponse and share it if partner exists"
+        pass
+
+    def record_and_share_feedback(self, context, value):
+        "record context's feedback to partner if it exists"
+        pass
+
     def execute_user_command(self, message):
         "executes commands entered in user's chat"
         context = message["context"]
@@ -130,9 +138,20 @@ class ModulePeerHabit(Module):
         if state is not None:
             getattr(self, 'state_' + state)(message)
         elif message["type"] == 'callback_query':
-            callback_type, absolute_day, serialized, value = message["data"]["text"].split(';')
-            self.answer_callback_query(message["data"]["callback_query_id"],
-                                       '%r %r %r %r' % (callback_type, absolute_day, serialized, value))
+            def answer(text=''):
+                "answer the callback query with text"
+                self.answer_callback_query(message["data"]["callback_query_id"], text)
+            callback_type, absolute_day, _serialized, value = message["data"]["text"].split(';')
+            absolute_day, value = map(int, (absolute_day, value))
+            if callback_type == 'feedback':
+                self.record_and_share_feedback(context, value)
+                answer('피드백이 기록되고 공유되었습니다: %s' % sr.FEEDBACKS[value])
+            elif callback_type == 'response':
+                self.record_and_share_response(context, value)
+                if self.user.condition(context) == 'CONTROL':
+                    answer('응답이 기록되었습니다: %s%%' % value)
+                else:
+                    answer('응답이 기록되고 공유되었습니다: %s%%' % value)
         else:
             self.send_text(context, random.choice(sr.BOWWOWS))
 
