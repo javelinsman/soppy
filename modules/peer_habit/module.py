@@ -63,7 +63,7 @@ class ModulePeerHabit(Module):
         current_time = json.loads(message["data"]["time"])
         year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
         absolute_day = (year-2000) * 400 + yday
-        absolute_day = 8005
+        absolute_day = 8011
         hour = 9
         for context in self.user.list_of_users():
             if self.user.condition(context) is not None:
@@ -85,14 +85,16 @@ class ModulePeerHabit(Module):
             self.send_text(context, self.user.summary(partner, absolute_day-1))
 
         if condition == 'CONTROL':
-            self.send_text(context, '[최고예요]')
+            yesterday_response = self.user.response(context, absolute_day-1)
+            if yesterday_response is not None:
+                self.send_text(context, '%s [최고예요]' % yesterday_response)
         else:
             callback_base = 'feedback;%s;%s;' % (absolute_day-1, serialized) + '%d'
             self.send({
                 "type": "markup_text",
                 "context": context,
                 "data": {
-                    "text": '파트너인 키 큰 형광 코끼리의 어제 성과에 대해 피드백을 보내주세요.',
+                    "text": sr.FEEDBACK_INTRO % self.user.nick(partner),
                     "reply_markup": json.dumps({"inline_keyboard": [
                         [{"text": sr.FEEDBACKS[4], "callback_data": callback_base % 4}],
                         [{"text": sr.FEEDBACKS[3], "callback_data": callback_base % 3}],
@@ -108,7 +110,7 @@ class ModulePeerHabit(Module):
             "type": "markup_text",
             "context": context,
             "data": {
-                "text": '오늘도 힘내서 일일 목표 달성해주세요!\n\n푸시업 45개, 레그레이즈 45개\n\n언제든 달성하고 나면 아래의 버튼을 눌러주세요.',
+                "text": sr.RESPONSE_INTRO % self.user.goal_name(context),
                 "reply_markup": json.dumps({"inline_keyboard": [[
                     {"text": '0%', "callback_data": callback_base % 0},
                     {"text": '25%', "callback_data": callback_base % 25},

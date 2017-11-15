@@ -153,4 +153,6 @@ class User:
 
     def summary(self, context, absolute_day):
         "summary of achievment with insights"
-        return 'summary for %d of %s' % (absolute_day, Module.serialize_context(context))
+        nick = self.nick(context)
+        perf = self.response(context, absolute_day)
+        return '%s님의 어제 성과는 %r에요.' % (nick, perf)
