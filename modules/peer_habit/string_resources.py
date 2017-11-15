@@ -52,6 +52,8 @@ BOWWOWS = ['멍', '머엉', '머어엉']
 
 WRONG_RESPONSE = '잘못된 응답입니다. 다시 입력해주세요.'
 
+REMINDER_FOR_RESPONSE = '오늘도 목표 달성하는 것 잊지 말아주세요!'
+
 
 
 """

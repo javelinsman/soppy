@@ -76,7 +76,9 @@ class ModulePeerHabit(Module):
         pass
 
     def reminder_routine(self, context, absolute_day):
-        pass
+        "send reminder if the user hasn't sent any response yet"
+        if self.user.last_response_day(context) < absolute_day:
+            self.send_text(context, sr.REMINDER_FOR_RESPONSE)
 
     def execute_user_command(self, message):
         "executes commands entered in user's chat"
