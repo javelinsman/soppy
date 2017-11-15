@@ -65,7 +65,7 @@ class ModulePeerHabit(Module):
         current_time = json.loads(message["data"]["time"])
         year, _month, _day, hour, _minute, _second, _wday, yday = current_time[:8]
         absolute_day = (year-2000) * 400 + yday
-        absolute_day = 8014
+        absolute_day = 8019
         hour = 9
         for context in self.user.list_of_users():
             if self.user.condition(context) is not None:
@@ -93,7 +93,8 @@ class ModulePeerHabit(Module):
         if condition == 'CONTROL':
             yesterday_response = self.user.response(context, absolute_day-1)
             if yesterday_response is not None:
-                self.send_text(context, '%s [최고예요]' % yesterday_response)
+                ind = self.robot.evaluate_feedback(yesterday_response)
+                self.send_text(context, '%s' % sr.FEEDBACKS[ind])
         else:
             callback_base = 'feedback;%s;%s;' % (absolute_day-1, serialized) + '%d'
             if condition == 'PSEUDO':

@@ -135,11 +135,11 @@ class User:
 
     def response(self, context, absolute_day, value=None):
         "response of the user"
-        return self.getset('response_of_%d' % absolute_day, context, value)
+        return self.getset('response_of_%d' % absolute_day, context, value, wrap=int)
 
     def feedback(self, context, absolute_day, value=None):
         "feedback of the user"
-        return self.getset('feedback_of_%d' % absolute_day, context, value)
+        return self.getset('feedback_of_%d' % absolute_day, context, value, wrap=int)
 
     def brief_info(self, context):
         "brief information of the user"

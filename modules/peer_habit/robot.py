@@ -15,6 +15,12 @@ class Robot:
             }
 
     @staticmethod
+    def evaluate_feedback(score):
+        "evaluate feedback index based on the score"
+        val = int(random.normalvariate(score, 10) / 20)
+        return min(max(0, val), 4)
+
+    @staticmethod
     def random_name():
         "generate random name"
         aaa = ['멋쟁이', '귀여운', '커다란', '키 큰', '사려깊은', '활발한', '지적인', '용맹한', '개구장이', '여유로운']
@@ -87,11 +93,11 @@ class Robot:
 
     def response(self, bot_pk, absolute_day, value=None):
         "response of the robot"
-        return self.getset('response_of_%d' % absolute_day, bot_pk, value)
+        return self.getset('response_of_%d' % absolute_day, bot_pk, value, wrap=int)
 
     def feedback(self, bot_pk, absolute_day, value=None):
         "feedback of the robot"
-        return self.getset('feedback_of_%d' % absolute_day, bot_pk, value)
+        return self.getset('feedback_of_%d' % absolute_day, bot_pk, value, wrap=int)
 
     def partner(self, *args, **kwargs):
         "experimental partner"
