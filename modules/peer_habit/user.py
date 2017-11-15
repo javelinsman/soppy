@@ -3,6 +3,7 @@
 import random
 import string
 
+from modules.peer_habit import string_resources as sr
 from basic.module import Module
 
 class User:
@@ -121,6 +122,10 @@ class User:
         return self.getset('partner', *args, **kwargs,
                            wrap=Module.parse_context, wrap_set=Module.serialize_context)
 
+    def combo(self, *args, **kwargs):
+        "combo"
+        return self.getset('combo', *args, **kwargs, default=0, wrap=int)
+
     def last_morning_routine(self, *args, **kwargs):
         "the last day that morning routine was performed"
         return self.getset('last_morning_routine', *args, **kwargs, default=0, wrap=int)
@@ -158,5 +163,18 @@ class User:
     def summary(self, context, absolute_day):
         "summary of achievment with insights"
         nick = self.nick(context)
-        perf = self.response(context, absolute_day)
-        return '%s님의 어제 성과는 %r에요.' % (nick, perf)
+        achievement = self.response(context, absolute_day)
+        sentences = []
+        if achievement is None:
+            sentences.append(sr.REPORTING_NOT_RESPONSED % nick)
+        else:
+            sentences.append(sr.REPORTING_YESTERDAY_RESPONSE %
+                             (nick, achievement))
+        """
+        combo = self.combo(context)
+        if combo > 0:
+            sentences.append(sr.REPORTING_POSITIVE_COMBO % combo)
+        elif combo < 0:
+            sentences.append(sr.REPORTING_NEGATIVE_COMBO % (combo * -1))
+        """
+        return ' '.join(sentences)

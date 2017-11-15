@@ -67,6 +67,16 @@ class ModulePeerHabit(Module):
         if second % 60 not in [0, 1]:
             return
         absolute_day = (year-2000) * 400 + yday
+
+        """
+        for context in self.user.list_of_users():
+            if self.user.condition(context) is not None:
+                self.calculate_combo(context, absolute_day)
+        for bot_pk in self.robot.list_of_robots():
+            if self.robot.partner(bot_pk) is not None:
+                self.calculate_combo(bot_pk, absolute_day, True)
+        """
+
         for context in self.user.list_of_users():
             if self.user.condition(context) is not None:
                 if hour >= 9 and self.user.last_morning_routine(context) < absolute_day:
@@ -110,16 +120,35 @@ class ModulePeerHabit(Module):
         partner = self.robot.partner(bot_pk)
         if random.random() < prob:
             yesterday_response = self.user.response(partner, absolute_day-1)
-            if yesterday_response is not None:
-                value = self.robot.evaluate_feedback(yesterday_response)
-                self.record_and_share_feedback_bot(bot_pk, value, absolute_day-1)
+            value = self.robot.evaluate_feedback(yesterday_response)
+            self.record_and_share_feedback_bot(bot_pk, value, absolute_day-1)
+
+    def calculate_combo(self, context, absolute_day, bot=False):
+        "calculate combo"
+        if bot:
+            combo = self.robot.combo(context)
+            yesterday_response = self.robot.response(context, absolute_day-1)
+            def set_combo(d):
+                self.robot.combo(context, d)
+        else:
+            combo = self.user.combo(context)
+            yesterday_response = self.user.response(context, absolute_day-1)
+            def set_combo(d):
+                self.user.combo(context, d)
+        if yesterday_response in [75, 100]:
+            set_combo(max(combo+1, 0))
+        elif yesterday_response in [None, 0, 25]:
+            set_combo(min(combo-1, 0))
+        else:
+            set_combo(0)
 
     def morning_routine(self, context, absolute_day):
         "at 9 o'clock, gives summary and feedback, today's achievement message"
+        """
+        yesterday_response = self.user.response(context, absolute_day-1)
         self.send_text(context, self.user.summary(context, absolute_day-1))
         condition = self.user.condition(context)
         serialized = self.serialize_context(context)
-
         if condition in ['PSEUDO', 'REAL']:
             if condition == 'PSEUDO':
                 bot_pk = self.user.robot(context)
@@ -129,10 +158,8 @@ class ModulePeerHabit(Module):
                 self.send_text(context, self.user.summary(partner, absolute_day-1))
 
         if condition == 'CONTROL':
-            yesterday_response = self.user.response(context, absolute_day-1)
-            if yesterday_response is not None:
-                ind = self.robot.evaluate_feedback(yesterday_response)
-                self.send_text(context, sr.FEEDBACK_EVALUATED % sr.FEEDBACKS[ind])
+            ind = self.robot.evaluate_feedback(yesterday_response)
+            self.send_text(context, sr.FEEDBACK_EVALUATED % sr.FEEDBACKS[ind])
         else:
             callback_base = 'feedback;%s;%s;' % (absolute_day-1, serialized) + '%d'
             if condition == 'PSEUDO':
@@ -154,6 +181,8 @@ class ModulePeerHabit(Module):
                     }
                 })
 
+        """
+        serialized = self.serialize_context(context)
         callback_base = 'response;%s;%s;' % (absolute_day, serialized) + '%d'
         self.send({
             "type": "markup_text",
