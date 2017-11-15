@@ -57,7 +57,7 @@ class User:
         state_key = 'user-%s:%s' % (varname.replace('_', '-'), serialized)
         if value is None:
             result = self.db.get(state_key)
-            if result == '':
+            if result is None or result == '':
                 if 'default' in kwargs:
                     return kwargs["default"]
                 return None
