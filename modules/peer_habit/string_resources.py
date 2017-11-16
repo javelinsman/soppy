@@ -74,6 +74,8 @@ REPORTING_YESTERDAY_RESPONSE = '%s님은 어제 목표를 %s%%만큼 성취하�
 REPORTING_POSITIVE_COMBO = '%d일 동안 연달아 목표를 실천하셨어요.'
 REPORTING_NEGATIVE_COMBO = '%d일째 목표를 실천하지 못하셨어요.'
 
+INVALID_TOO_OLD = '과거의 기록은 수정할 수 없습니다.'
+
 
 """
 ADMIN

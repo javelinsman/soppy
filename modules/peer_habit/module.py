@@ -76,8 +76,8 @@ class ModulePeerHabit(Module):
         "manages sessions at 9 and 22 o' clock and handles bots"
         current_time = json.loads(message["data"]["time"])
         year, _month, _day, hour, _minute, second, _wday, yday = current_time[:8]
-        #if second % 60 not in [0, 1]:
-            #return
+        if second % 60 not in [0, 1]:
+            return
         absolute_day = (year-2000) * 400 + yday
 
         last_morning_routine = self.convert_to_int_default_zero(
@@ -105,9 +105,11 @@ class ModulePeerHabit(Module):
         # Execute Reminder Routine at Every 10 p.m.
         if hour >= 22 and last_reminder_routine < absolute_day:
             self.db.set(self.key["last_reminder_routine"], absolute_day)
+            reminder_sent_count = 0
             for context in self.user.list_of_users():
                 if self.user.condition(context) is not None:
-                    self.reminder_routine(context, absolute_day)
+                    reminder_sent_count += self.reminder_routine(context, absolute_day)
+            self.report('reminder sent to %d users' % reminder_sent_count)
 
         # Try bot's responses and feedbacks
         probability_parameter = 0.025
@@ -241,6 +243,8 @@ class ModulePeerHabit(Module):
         if self.user.last_response_day(context) < absolute_day or \
            self.user.response(context, absolute_day) == 0:
             self.send_text(context, sr.REMINDER_FOR_RESPONSE)
+            return 1
+        return 0
 
 
     def record_and_share_response(self, context, value, absolute_day):
@@ -290,6 +294,11 @@ class ModulePeerHabit(Module):
         "executes commands entered in user's chat"
         context = message["context"]
         state = self.user.state(context)
+        current_time = time.localtime()
+        year = current_time.tm_year
+        yday = current_time.tm_yday
+        hour = current_time.tm_hour
+        absolute_today = (year-2000) * 400 + yday
         if state is not None:
             getattr(self, 'state_' + state)(message)
         elif message["type"] == 'callback_query':
@@ -300,6 +309,10 @@ class ModulePeerHabit(Module):
             absolute_day, value = map(int, (absolute_day, value))
             if callback_type == 'feedback':
                 answer()
+                if absolute_day < absolute_today - 2 or \
+                   (absolute_day == absolute_today - 2 and hour >= 9):
+                    self.send_text(context, sr.INVALID_TOO_OLD)
+                    return
                 prev_feedback = self.user.feedback(context, absolute_day)
                 if prev_feedback is None or prev_feedback != value:
                     if self.record_and_share_feedback(context, value, absolute_day):
@@ -309,6 +322,10 @@ class ModulePeerHabit(Module):
                         self.send_text(context, sr.FEEDBACK_ALREADY_RECORDED)
             elif callback_type == 'response':
                 answer()
+                if absolute_day < absolute_today - 1 or \
+                   (absolute_day == absolute_today - 1 and hour >= 9):
+                    self.send_text(context, sr.INVALID_TOO_OLD)
+                    return
                 prev_response = self.user.response(context, absolute_day)
                 if prev_response is None or prev_response != value:
                     self.record_and_share_response(context, value, absolute_day)
