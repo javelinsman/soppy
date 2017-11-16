@@ -291,16 +291,23 @@ class ModulePeerHabit(Module):
             callback_type, absolute_day, _serialized, value = message["data"]["text"].split(';')
             absolute_day, value = map(int, (absolute_day, value))
             if callback_type == 'feedback':
-                if self.record_and_share_feedback(context, value, absolute_day):
-                    answer(sr.FEEDBACK_RECORDED_AND_SHARED % sr.FEEDBACKS[value])
-                else:
-                    answer(sr.FEEDBACK_ALREADY_RECORDED)
+                answer()
+                prev_feedback = self.user.feedback(context, absolute_day)
+                if prev_feedback is None or prev_feedback != value:
+                    if self.record_and_share_feedback(context, value, absolute_day):
+                        self.send_text(context,
+                                       sr.FEEDBACK_RECORDED_AND_SHARED % sr.FEEDBACKS[value])
+                    else:
+                        self.send_text(context, sr.FEEDBACK_ALREADY_RECORDED)
             elif callback_type == 'response':
-                self.record_and_share_response(context, value, absolute_day)
-                if self.user.condition(context) == 'CONTROL':
-                    answer(sr.RESPONSE_RECORDED % value)
-                else:
-                    answer(sr.RESPONSE_RECORDED_AND_SHARED % value)
+                answer()
+                prev_response = self.user.response(context, absolute_day)
+                if prev_response is None or prev_response != value:
+                    self.record_and_share_response(context, value, absolute_day)
+                    if self.user.condition(context) == 'CONTROL':
+                        self.send_text(context, sr.RESPONSE_RECORDED % value)
+                    else:
+                        self.send_text(context, sr.RESPONSE_RECORDED_AND_SHARED % value)
         else:
             self.send_text(context, random.choice(sr.BOWWOWS))
 
