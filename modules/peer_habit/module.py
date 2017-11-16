@@ -228,8 +228,10 @@ class ModulePeerHabit(Module):
 
     def reminder_routine(self, context, absolute_day):
         "send reminder if the user hasn't sent any response yet"
-        if self.user.last_response_day(context) < absolute_day:
+        if self.user.last_response_day(context) < absolute_day or \
+           self.user.response(context, absolute_day) == 0:
             self.send_text(context, sr.REMINDER_FOR_RESPONSE)
+
 
     def record_and_share_response(self, context, value, absolute_day):
         "record context's reponse and share it if partner exists"
