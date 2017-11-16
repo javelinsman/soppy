@@ -130,6 +130,11 @@ class User:
         "the last day that the user sent response"
         return self.getset('last_response_day', *args, **kwargs, default=0, wrap=int)
 
+    def zero_day(self, *args, **kwargs):
+        "the day that started the program"
+        return self.getset('zero_day', *args, **kwargs, default=7120, wrap=int)
+
+
     def response(self, context, absolute_day, value=None):
         "response of the user"
         return self.getset('response_of_%d' % absolute_day, context, value, wrap=int)

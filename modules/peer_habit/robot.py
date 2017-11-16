@@ -109,6 +109,10 @@ class Robot:
         "score of the robot"
         return self.getset('score_of_%d' % absolute_day, bot_pk, value, wrap=float, default=0)
 
+    def zero_day(self, *args, **kwargs):
+        "the day that started the program"
+        return self.getset('zero_day', *args, **kwargs, default=7120, wrap=int)
+
     def response(self, bot_pk, absolute_day, value=None):
         "response of the robot"
         return self.getset('response_of_%d' % absolute_day, bot_pk, value, wrap=int)

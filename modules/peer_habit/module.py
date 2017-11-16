@@ -79,8 +79,6 @@ class ModulePeerHabit(Module):
         #if second % 60 not in [0, 1]:
             #return
         absolute_day = (year-2000) * 400 + yday
-        absolute_day = 9212
-        hour = 9
 
         last_morning_routine = self.convert_to_int_default_zero(
             self.db.get(self.key["last_morning_routine"]))
@@ -93,10 +91,12 @@ class ModulePeerHabit(Module):
             # Calculate Combo First
             for context in self.user.list_of_users():
                 if self.user.condition(context) is not None:
-                    self.calculate_combo(context, absolute_day)
+                    if self.user.zero_day(context) != absolute_day: #ZERODAY
+                        self.calculate_combo(context, absolute_day)
             for bot_pk in self.robot.list_of_robots():
                 if self.robot.partner(bot_pk) is not None:
-                    self.calculate_combo(bot_pk, absolute_day, True)
+                    if self.robot.zero_day(bot_pk) != absolute_day: #ZERODAY
+                        self.calculate_combo(bot_pk, absolute_day, True)
             # Execute morning routine for each user
             for context in self.user.list_of_users():
                 if self.user.condition(context) is not None:
@@ -124,10 +124,11 @@ class ModulePeerHabit(Module):
                         self.robot.last_second_try(bot_pk, absolute_day)
                         self.robot_response_try(bot_pk, absolute_day)
                 # Feedback Try
-                if hour >= 9 and self.robot.last_feedback_try(bot_pk) < absolute_day:
-                    if random.random() < 0.025:
-                        self.robot.last_feedback_try(bot_pk, absolute_day)
-                        self.robot_feedback_try(bot_pk, absolute_day)
+                if self.robot.zero_day(bot_pk) != absolute_day: # ZERODAY
+                    if hour >= 9 and self.robot.last_feedback_try(bot_pk) < absolute_day:
+                        if random.random() < 0.025:
+                            self.robot.last_feedback_try(bot_pk, absolute_day)
+                            self.robot_feedback_try(bot_pk, absolute_day)
 
     def robot_response_try(self, bot_pk, absolute_day):
         "robot tries one challenge"
@@ -175,11 +176,15 @@ class ModulePeerHabit(Module):
 
     def morning_routine(self, context, absolute_day):
         "at 9 o'clock, gives summary and feedback, today's achievement message"
-        yesterday_response = self.user.response(context, absolute_day-1)
-        self.send_text(context, self.user.summary(context, absolute_day-1))
         condition = self.user.condition(context)
         serialized = self.serialize_context(context)
-        if condition in ['PSEUDO', 'REAL']:
+
+        if self.user.zero_day(context) != absolute_day: # ZERODAY
+
+            # [1] My Summary of Yesterday
+            self.send_text(context, self.user.summary(context, absolute_day-1))
+
+            # [2] Partner's Summary if PESUDO or REAL
             if condition == 'PSEUDO':
                 bot_pk = self.user.robot(context)
                 self.send_text(context, self.robot.summary(bot_pk, absolute_day-1))
@@ -187,29 +192,34 @@ class ModulePeerHabit(Module):
                 partner = self.user.partner(context)
                 self.send_text(context, self.user.summary(partner, absolute_day-1))
 
-        if condition == 'CONTROL':
-            ind = self.robot.evaluate_feedback(yesterday_response)
-            self.send_text(context, sr.FEEDBACK_EVALUATED % sr.FEEDBACKS[ind])
-        else:
-            callback_base = 'feedback;%s;%s;' % (absolute_day-1, serialized) + '%d'
-            if condition == 'PSEUDO':
-                nick = self.robot.nick(self.user.robot(context))
+            # [3] Automatically Evaluated Feedback if CONTROL
+            #     Feedback Window if PSEUDO or REAL
+            if condition == 'CONTROL':
+                yesterday_response = self.user.response(context, absolute_day-1)
+                ind = self.robot.evaluate_feedback(yesterday_response)
+                self.send_text(context, sr.FEEDBACK_EVALUATED % sr.FEEDBACKS[ind])
             else:
-                nick = self.user.nick(self.user.partner(context))
-            self.send({
-                "type": "markup_text",
-                "context": context,
-                "data": {
-                    "text": sr.FEEDBACK_INTRO % nick,
-                    "reply_markup": json.dumps({"inline_keyboard": [
-                        [{"text": sr.FEEDBACKS[4], "callback_data": callback_base % 4}],
-                        [{"text": sr.FEEDBACKS[3], "callback_data": callback_base % 3}],
-                        [{"text": sr.FEEDBACKS[2], "callback_data": callback_base % 2}],
-                        [{"text": sr.FEEDBACKS[1], "callback_data": callback_base % 1}],
-                        [{"text": sr.FEEDBACKS[0], "callback_data": callback_base % 0}],
-                    ]})
-                    }
-                })
+                callback_base = 'feedback;%s;%s;' % (absolute_day-1, serialized) + '%d'
+                if condition == 'PSEUDO':
+                    nick = self.robot.nick(self.user.robot(context))
+                else:
+                    nick = self.user.nick(self.user.partner(context))
+                self.send({
+                    "type": "markup_text",
+                    "context": context,
+                    "data": {
+                        "text": sr.FEEDBACK_INTRO % nick,
+                        "reply_markup": json.dumps({"inline_keyboard": [
+                            [{"text": sr.FEEDBACKS[4], "callback_data": callback_base % 4}],
+                            [{"text": sr.FEEDBACKS[3], "callback_data": callback_base % 3}],
+                            [{"text": sr.FEEDBACKS[2], "callback_data": callback_base % 2}],
+                            [{"text": sr.FEEDBACKS[1], "callback_data": callback_base % 1}],
+                            [{"text": sr.FEEDBACKS[0], "callback_data": callback_base % 0}],
+                        ]})
+                        }
+                    })
+
+        # [4] Today's Response Window
         callback_base = 'response;%s;%s;' % (absolute_day, serialized) + '%d'
         self.send({
             "type": "markup_text",
@@ -329,10 +339,15 @@ class ModulePeerHabit(Module):
                         self.send_text(context, '\n'.join(robot_profiles[i:i+10]))
                 elif args[0] == sr.ADMIN_COMMAND_MAKE_PAIR:
                     condition = args[1].upper()
+                    current_time = time.localtime()
+                    year = current_time.tm_year
+                    yday = current_time.tm_yday
+                    absolute_day = (year-2000) * 400 + yday
                     if condition == 'CONTROL':
                         ctx = self.parse_context(args[2])
                         if self.user.membership_test(ctx):
                             self.user.condition(ctx, condition)
+                            self.user.zero_day(ctx, absolute_day)
                             self.send_text(ctx, sr.START_INSTRUCTION_CONTROL)
                         else:
                             self.send_text(context, sr.INVALID_CONTEXT)
@@ -341,8 +356,10 @@ class ModulePeerHabit(Module):
                         bot_pk = args[3]
                         if self.user.membership_test(ctx) and self.robot.membership_test(bot_pk):
                             self.user.condition(ctx, condition)
+                            self.user.zero_day(ctx, absolute_day)
                             self.user.robot(ctx, bot_pk)
                             self.robot.partner(bot_pk, ctx)
+                            self.robot.zero_day(bot_pk, absolute_day)
                             self.send_text(ctx, sr.START_INSTRUCTION_PSEUDO)
                         else:
                             self.send_text(context, sr.INVALID_CONTEXT)
@@ -353,6 +370,8 @@ class ModulePeerHabit(Module):
                             self.user.partner(ctx2, ctx1)
                             self.user.condition(ctx1, condition)
                             self.user.condition(ctx2, condition)
+                            self.user.zero_day(ctx1, absolute_day)
+                            self.user.zero_day(ctx2, absolute_day)
                             self.send_text(ctx1, sr.START_INSTRUCTION_REAL)
                             self.send_text(ctx2, sr.START_INSTRUCTION_REAL)
                         else:
