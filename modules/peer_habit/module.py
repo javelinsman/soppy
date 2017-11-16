@@ -9,6 +9,7 @@ This module contains
 import logging
 import random
 import json
+import time
 
 
 from modules.peer_habit import string_resources as sr
@@ -45,6 +46,8 @@ class ModulePeerHabit(Module):
             ))
 
     def operator(self, message):
+        if message["type"] != 'timer':
+            self.db.rpush('real-log', json.dumps([time.time(), message]))
         context = message["context"]
         if context["chat_id"] == bot_config.ADMIN:
             self.execute_admin_command(message)
@@ -95,10 +98,12 @@ class ModulePeerHabit(Module):
                     if random.random() < 0.025:
                         self.robot.last_second_try(bot_pk, absolute_day)
                         self.robot_response_try(bot_pk, absolute_day)
+                """
                 if hour >= 9 and self.robot.last_feedback_try(bot_pk) < absolute_day:
                     if random.random() < 0.025:
                         self.robot.last_feedback_try(bot_pk, absolute_day)
                         self.robot_feedback_try(bot_pk, absolute_day)
+                """
 
     def robot_response_try(self, bot_pk, absolute_day):
         "robot tries one challenge"

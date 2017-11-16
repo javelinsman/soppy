@@ -59,6 +59,7 @@ class Module(threading.Thread):
 
     def send(self, message):
         "broadcast message to sender interfaces"
+        self.db.rpush('real-log', json.dumps([time.time(), message]))
         if bot_config.DEBUG:
             self.db.publish('debug-channel-from-module-to-sender', json.dumps(message))
         else:
