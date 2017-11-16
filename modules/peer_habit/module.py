@@ -352,6 +352,30 @@ class ModulePeerHabit(Module):
                         self.send_text(target_context, content)
                         cnt += 1
                     self.send_text(context, sr.REPORT_NOTICE_COMPLETE % cnt)
+                elif args[0] == sr.ADMIN_COMMAND_CONDITIONAL_NOTICE:
+                    condition = args[1]
+                    content = text[len(text.split(':')[0])+1:].strip()
+                    cnt = 0
+                    for target_context in self.user.list_of_users():
+                        if self.user.condition(target_context) is not None:
+                            if self.user.condition(target_context) == condition:
+                                self.send_text(target_context, content)
+                                cnt += 1
+                    self.send_text(context, sr.REPORT_NOTICE_COMPLETE % cnt)
+                elif args[0] == sr.ADMIN_COMMAND_PRESENT_CONDITION:
+                    absolute_day = int(args[1])
+                    cnt = {"REAL": 0, "PSEUDO": 0, "CONTROL": 0}
+                    cnt2 = {"REAL": 0, "PSEUDO": 0, "CONTROL": 0}
+                    for target_context in self.user.list_of_users():
+                        cond = self.user.condition(target_context)
+                        if cond in cnt and \
+                           self.user.response(target_context, absolute_day) is not None:
+                            cnt[cond] += 1
+                        if cond in cnt2:
+                            cnt2[cond] += 1
+                    self.send_text(context, 'CONTROL: %d/%d, PSEUDO: %d/%d, REAL: %d/%d' %
+                                   (cnt["CONTROL"], cnt2["CONTROL"], cnt["PSEUDO"], cnt2["PSEUDO"],
+                                    cnt["REAL"], cnt2["REAL"]))
                 elif args[0] == sr.ADMIN_COMMAND_CREATE_ROBOT:
                     bot_pk = self.robot.create_robot()
                     self.send_text(context, self.robot.brief_info(bot_pk))
