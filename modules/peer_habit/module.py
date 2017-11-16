@@ -247,6 +247,8 @@ class ModulePeerHabit(Module):
         "record context's reponse and share it if partner exists"
         self.user.response(context, absolute_day, value)
         self.user.last_response_day(context, absolute_day)
+        if time.localtime().tm_hour < 9:
+            return
         if self.user.condition(context) == 'REAL':
             partner = self.user.partner(context)
             self.send_text(partner, sr.RESPONSE_ARRIVED % (
@@ -256,6 +258,8 @@ class ModulePeerHabit(Module):
         "record context's feedback to partner if it exists"
         if self.user.feedback(context, absolute_day) is None:
             self.user.feedback(context, absolute_day, value)
+            if time.localtime().tm_hour < 9:
+                return
             if self.user.condition(context) == 'REAL':
                 partner = self.user.partner(context)
                 self.send_text(partner, sr.FEEDBACK_ARRIVED % (
@@ -266,6 +270,8 @@ class ModulePeerHabit(Module):
     def record_and_share_response_bot(self, bot_pk, value, absolute_day):
         "for bot"
         self.robot.response(bot_pk, absolute_day, value)
+        if time.localtime().tm_hour < 9:
+            return
         partner = self.robot.partner(bot_pk)
         self.send_text(partner, sr.RESPONSE_ARRIVED % (
             self.robot.nick(bot_pk), value))
@@ -273,6 +279,8 @@ class ModulePeerHabit(Module):
     def record_and_share_feedback_bot(self, bot_pk, value, absolute_day):
         "for bot"
         self.robot.feedback(bot_pk, absolute_day, value)
+        if time.localtime().tm_hour < 9:
+            return
         partner = self.robot.partner(bot_pk)
         self.send_text(partner, sr.FEEDBACK_ARRIVED % (
             self.robot.nick(bot_pk), sr.FEEDBACKS[value]))
