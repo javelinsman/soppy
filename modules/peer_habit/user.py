@@ -126,14 +126,6 @@ class User:
         "combo"
         return self.getset('combo', *args, **kwargs, default=0, wrap=int)
 
-    def last_morning_routine(self, *args, **kwargs):
-        "the last day that morning routine was performed"
-        return self.getset('last_morning_routine', *args, **kwargs, default=0, wrap=int)
-
-    def last_reminder_routine(self, *args, **kwargs):
-        "the last day that reminder routine was performed"
-        return self.getset('last_reminder_routine', *args, **kwargs, default=0, wrap=int)
-
     def last_response_day(self, *args, **kwargs):
         "the last day that the user sent response"
         return self.getset('last_response_day', *args, **kwargs, default=0, wrap=int)
@@ -170,11 +162,9 @@ class User:
         else:
             sentences.append(sr.REPORTING_YESTERDAY_RESPONSE %
                              (nick, achievement))
-        """
         combo = self.combo(context)
-        if combo > 0:
+        if combo > 1:
             sentences.append(sr.REPORTING_POSITIVE_COMBO % combo)
-        elif combo < 0:
+        elif combo < -1:
             sentences.append(sr.REPORTING_NEGATIVE_COMBO % (combo * -1))
-        """
         return ' '.join(sentences)

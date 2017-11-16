@@ -148,11 +148,9 @@ class Robot:
         else:
             sentences.append(sr.REPORTING_YESTERDAY_RESPONSE %
                              (nick, achievement))
-        """
         combo = self.combo(bot_pk)
-        if combo > 0:
+        if combo > 1:
             sentences.append(sr.REPORTING_POSITIVE_COMBO % combo)
-        elif combo < 0:
+        elif combo < -1:
             sentences.append(sr.REPORTING_NEGATIVE_COMBO % (combo * -1))
-        """
         return ' '.join(sentences)
