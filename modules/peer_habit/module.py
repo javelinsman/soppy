@@ -381,6 +381,9 @@ class ModulePeerHabit(Module):
                     self.send_text(context, 'CONTROL: %d, PSEUDO: %d, REAL: %d' %
                                    (prog["CONTROL"]/cnt2["CONTROL"], prog["PSEUDO"]/cnt2["PSEUDO"],
                                     prog["REAL"]/cnt2["REAL"]))
+                    self.send_text(context, 'CONTROL: %d, PSEUDO: %d, REAL: %d' %
+                                   (prog["CONTROL"]/max(1,cnt["CONTROL"]), prog["PSEUDO"]/max(1,cnt["PSEUDO"]),
+                                    prog["REAL"]/max(1,cnt["REAL"])))
                 elif args[0] == sr.ADMIN_COMMAND_CREATE_ROBOT:
                     bot_pk = self.robot.create_robot()
                     self.send_text(context, self.robot.brief_info(bot_pk))
