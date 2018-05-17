@@ -30,5 +30,23 @@ class GoogleCalendar:
         events = events_result.get('items', [])
         return '\n'.join([str(event['summary']) for event in events])
 
+    def create(self, title, start, end):
+        event = {
+            "summary": title,
+            "start": {
+                "dateTime": start.isoformat(),
+                "timeZone": 'Asia/Seoul',
+            },
+            "end": {
+                "dateTime": end.isoformat(),
+                "timeZone": 'Asia/Seoul',
+            }
+        }
+        event = self.service.events().insert(
+            calendarId=bot_config.google_calendar_id,
+            body=event
+            ).execute()
+        return event["summary"]
+
 if __name__ == "__main__":
     print(GoogleCalendar().list_from_now())
