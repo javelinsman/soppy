@@ -28,7 +28,7 @@ class GoogleCalendar:
             orderBy='startTime'
             ).execute()
         events = events_result.get('items', [])
-        return '\n'.join([str(event['summary']) for event in events])
+        return '\n'.join(['%s %s' % (str(event['start']['dateTime'][:-9]), str(event['summary'])) for event in events])
 
     def create(self, title, start, end):
         event = {
