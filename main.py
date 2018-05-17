@@ -16,7 +16,7 @@ import bot_config
 from interfaces.telegram.receiver import InterfaceTelegramReceiver
 from interfaces.telegram.sender import InterfaceTelegramSender
 from interfaces.timer.timer import Timer
-from modules.peer_habit.module import ModulePeerHabit
+from modules.schedule_assistant.module import ModuleScheduleAssistant
 
 
 # Basic Settings for Program
@@ -33,7 +33,7 @@ INTERFACES = {
     "timer": Timer(),
 }
 MODULES = {
-    "peer_habit": ModulePeerHabit(),
+    "schedule_assistant": ModuleScheduleAssistant(),
 }
 
 def start_components():
