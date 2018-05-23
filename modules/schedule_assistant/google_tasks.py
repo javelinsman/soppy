@@ -28,7 +28,7 @@ class GoogleTasks:
         return [(item['title'], item['id']) for item in items]
 
     def tasks(self):
-        tasks = self.service.tasks().list(tasklist='MTU4NjIwMTg2ODc0OTYzOTY3Nzk6NjgxODIwMDk4MTUyMDIxNzow').execute()
+        tasks = self.service.tasks().list(tasklist='MTU4NjIwMTg2ODc0OTYzOTY3Nzk6NjgxODIwMDk4MTUyMDIxNzow', showCompleted=False).execute()
         lst = []
         for task in tasks['items']:
             title = task['title']

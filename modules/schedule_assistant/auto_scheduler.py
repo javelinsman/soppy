@@ -29,19 +29,36 @@ class Gene:
         return True
 
     def calculate_penalty(self):
-        n = len(self.dna)
         occ = [] + self.occupied
+        # misplaced
         misplaced = 0
         for i, pos in enumerate(self.dna):
             task = self.tasks[self.flattened[i]]
             dura = task['duration_index']
-            if self.can_place(occ, pos, dura):
-                for i in range(dura):
-                    occ[pos+i] = True
+            due_index = task['due_index']
+
+            if pos + dura - 1 <= due_index and self.can_place(occ, pos, dura):
+                for j in range(dura):
+                    occ[pos+j] = True
             else:
                 misplaced += dura
                 self.dna[i] = -1
-        return misplaced * 1000
+        # time_penalty
+        time_penalty_value = 0
+        for i in range(self.N):
+            if occ[i]:
+                time_penalty_value += self.time_penalty[i]
+
+        # imbalance
+        workloads = [0]
+        for i in range(self.N):
+            if i > 0 and self.time_penalty[i] == 1 and self.time_penalty[i-1] > 1:
+                workloads.append(0)
+            if occ[i]:
+                workloads[-1] += 1
+        imbalance = max(workloads) - min(workloads)
+
+        return (misplaced, time_penalty_value, imbalance)
 
 class GA:
     def __init__(self, occupied, time_penalty, tasks):
@@ -60,14 +77,15 @@ class GA:
 
     def solve(self, timeout=180):
         best_gene = None
-        for i in range(10000):
+        ta = time.time()
+        for i in range(1000000):
             gene = self.new_gene()
             if best_gene is None or best_gene.penalty() > gene.penalty():
                 best_gene = gene
         result = []
         for ind, pos in enumerate(best_gene.dna):
             result.append((pos, self.flattened[ind]))
-        return result
+        return best_gene.penalty(), result
 
 class AutoScheduler:
     def __init__(self):
@@ -75,10 +93,10 @@ class AutoScheduler:
     def schedule(self, events, tasks, send_text):
         code = random.randint(1000, 9999)
         send_text('요청번호 %d번으로 계산을 시작했어요. 결과가 나오면 바로 전해드릴게요!' % code)
-        threading.Thread(target=self.optimize, args=(events, tasks, send_text, code)).start()
+        threading.Thread(target=self.optimize, args=(events, tasks, send_text, code), daemon=True).start()
     def optimize(self, events, tasks, send_text, code):
-        #N = 21 * 24 * 2
-        N = 1 * 12 * 2
+        N = 14 * 24 * 2
+        #N = 1 * 12 * 2
         now = datetime.now()
         stamp_base = datetime(now.year, now.month, now.day, now.hour, 0, 0)
         if now.minute >= 30:
@@ -110,10 +128,12 @@ class AutoScheduler:
         # penalty
         penalty = [0] * N
         for i in range(N):
-            if 22 <= stamps[i].hour <= 23:
-                penalty[i] = 10
-            elif 0 <= stamps[i].hour <= 6:
-                penalty[i] = 50
+            if 0 <= stamps[i].hour < 7:
+                penalty[i] = 5
+            elif 7 <= stamps[i].hour < 10:
+                penalty[i] = 1
+            elif 22 <= stamps[i].hour:
+                penalty[i] = 1
 
         # due_index
         for i, task in enumerate(tasks):
@@ -126,7 +146,8 @@ class AutoScheduler:
             tasks[i]['due_index'] = due_index
             tasks[i]['duration_index'] = int(tasks[i]['duration'] * 2)
 
-        solution = self.solve_GA(occupied, penalty, tasks)
+        (misplaced, time_penalty_value, imbalance), solution = self.solve_GA(occupied, penalty, tasks)
+        send_text('%d번 계산 결과가 도착했어요! %.1f시간의 활동이 누락되었고, 늦은 시간에 일하는 패널티는 %d점이고, 가장 많이 일하는 날과 적게 일하는 날의 시간차는 %.1f시간이에요.' % (code, misplaced/2, time_penalty_value, imbalance/2))
         for pos, ind in solution:
             if pos == -1:
                 continue
@@ -135,8 +156,14 @@ class AutoScheduler:
             result.append((stamps[pos], stamps[pos+dura], task['title']))
 
         result.sort()
+        if len(result) == 0:
+            return
+        initial_date = result[0][0].date() - timedelta(1)
         message = []
         for start, end, title in result:
+            if initial_date < start.date():
+                message.append('[%d월 %d일]' % (start.month, start.day))
+                initial_date = start.date()
             message.append('%02d:%02d~%02d:%02d : %s' % (start.hour, start.minute, end.hour, end.minute, title))
         send_text('\n'.join(message))
     
