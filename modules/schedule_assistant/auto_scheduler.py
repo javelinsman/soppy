@@ -56,7 +56,13 @@ class Gene:
                 workloads.append(0)
             if occ[i]:
                 workloads[-1] += 1
-        imbalance = max(workloads) - min(workloads)
+        mean = sum(workloads) / len(workloads)
+        variance = 0
+        for workload in workloads:
+            variance += (workload - mean) ** 2
+        imbalance = variance ** 0.5
+        self.workloads = workloads
+        self.workloads.append(0)
 
         return (misplaced, time_penalty_value, imbalance)
 
@@ -116,16 +122,17 @@ class GA:
         result = []
         for ind, pos in enumerate(best_gene.dna):
             result.append((pos, self.flattened[ind]))
-        return best_gene.penalty(), result
+        misplaced, time_penalty_value, imbalance = best_gene.penalty()
+        return misplaced, time_penalty_value, best_gene.workloads, result
 
 class AutoScheduler:
     def __init__(self):
         pass
-    def schedule(self, events, tasks, send_text):
+    def schedule(self, events, tasks, send_text, timeout=30):
         code = random.randint(1000, 9999)
         send_text('요청번호 %d번으로 계산을 시작했어요. 결과가 나오면 바로 전해드릴게요!' % code)
-        threading.Thread(target=self.optimize, args=(events, tasks, send_text, code), daemon=True).start()
-    def optimize(self, events, tasks, send_text, code):
+        threading.Thread(target=self.optimize, args=(events, tasks, send_text, code, timeout), daemon=True).start()
+    def optimize(self, events, tasks, send_text, code, timeout=30):
         N = 14 * 24 * 2
         #N = 1 * 12 * 2
         now = datetime.now()
@@ -177,28 +184,42 @@ class AutoScheduler:
             tasks[i]['due_index'] = due_index
             tasks[i]['duration_index'] = int(tasks[i]['duration'] * 2)
 
-        (misplaced, time_penalty_value, imbalance), solution = self.solve_GA(occupied, penalty, tasks)
-        send_text('%d번 계산 결과가 도착했어요! %.1f시간의 활동이 누락되었고, 늦은 시간에 일하는 패널티는 %d점이고, 가장 많이 일하는 날과 적게 일하는 날의 시간차는 %.1f시간이에요.' % (code, misplaced/2, time_penalty_value, imbalance/2))
+        misplaced, time_penalty_value, workloads, solution = self.solve_GA(occupied, penalty, tasks, timeout)
+        workloads = list(map(lambda x:x/2, workloads))
+        average_worktime = sum(workloads) / len(workloads)
+        overworks = len(list(filter(lambda x:x>10, workloads)))
+
+        dropout = []
         for pos, ind in solution:
-            if pos == -1:
-                continue
             task = tasks[ind]
+            if pos == -1:
+                dropout.append(task)
+                continue
             dura = task['duration_index']
             result.append((stamps[pos], stamps[pos+dura], task['title']))
 
+        send_text('%d번 계산 결과가 도착했어요!\n- 평균 활동 시간은 %.1f시간이에요.\n- 10시간 초과로 활동하는 날이 %d일 있어요.\n- 야간 활동 패널티는 %d점이에요.' % (code, average_worktime, overworks, time_penalty_value))
+        if len(dropout) > 0:
+            send_text('다음의 활동이 누락되었어요.\n' + '\n'.join(['- %s (%.1f시간)' % (t['title'], t['duration']) for t in dropout]))
+        
         result.sort()
         if len(result) == 0:
             return
         initial_date = result[0][0].date() - timedelta(1)
+        prev_date = result[0][0].date() - timedelta(1)
         message = []
         for start, end, title in result:
-            if initial_date < start.date():
-                message.append('[%d월 %d일]' % (start.month, start.day))
-                initial_date = start.date()
+            if prev_date < start.date():
+                dayname = ['월', '화', '수', '목', '금', '토', '일']
+                message.append('')
+                message.append('<%d월 %d일 %s요일>' % (start.month, start.day, dayname[start.weekday()]))
+                worktime = workloads[(start.date() - initial_date).days]
+                message.append('• 총 %d시간%s의 활동%s' % (int(worktime), ' 반' if worktime % 1 > 0 else '', '' if worktime <= 10 else '❗'))
+                prev_date = start.date()
             message.append('%02d:%02d~%02d:%02d : %s' % (start.hour, start.minute, end.hour, end.minute, title))
         send_text('\n'.join(message))
     
-    def solve_GA(self, occupied, penalty, tasks):
+    def solve_GA(self, occupied, penalty, tasks, timeout):
         ga = GA(occupied, penalty, tasks)
-        return ga.solve()
+        return ga.solve(timeout)
 

@@ -63,7 +63,10 @@ class ModuleScheduleAssistant(Module):
                 events = self.calendar.events()
                 def send_text(text):
                     self.send_text(context, text)
-                self.auto_scheduler.schedule(events, tasks, send_text)
+                timeout = 10
+                if len(args) > 1:
+                    timeout = int(args[1])
+                self.auto_scheduler.schedule(events, tasks, send_text, timeout)
         except Exception as e:
             self.send_text(context, str(e))
 
