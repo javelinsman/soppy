@@ -6,6 +6,7 @@ from basic.module import Module
 
 from modules.schedule_assistant.google_calendar import GoogleCalendar
 from modules.schedule_assistant.google_tasks import GoogleTasks
+from modules.schedule_assistant.auto_scheduler import AutoScheduler
 
 import bot_config
 
@@ -21,6 +22,7 @@ class ModuleScheduleAssistant(Module):
             }
         self.calendar = GoogleCalendar()
         self.tasks = GoogleTasks()
+        self.auto_scheduler = AutoScheduler()
 
     def filter(self, message):
         return all((
@@ -56,6 +58,12 @@ class ModuleScheduleAssistant(Module):
                 print(start)
                 print(end)
                 self.send_text(context, self.calendar.create(title, start, end))
+            elif args[0] == '스케쥴':
+                tasks = self.tasks.tasks()
+                events = self.calendar.events()
+                def send_text(text):
+                    self.send_text(context, text)
+                self.auto_scheduler.schedule(events, tasks, send_text)
         except Exception as e:
             self.send_text(context, str(e))
 

@@ -48,5 +48,17 @@ class GoogleCalendar:
             ).execute()
         return event["summary"]
 
+    def events(self):
+        now = datetime.datetime.utcnow().isoformat() + 'Z'
+        events_result = self.service.events().list(
+            calendarId=bot_config.google_calendar_id,
+            timeMin=now,
+            maxResults=250, #default value
+            singleEvents=True,
+            orderBy='startTime'
+            ).execute()
+        events = events_result.get('items', [])
+        return events
+
 if __name__ == "__main__":
     print(GoogleCalendar().list_from_now())

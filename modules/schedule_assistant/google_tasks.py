@@ -9,6 +9,7 @@ import datetime
 import re
 
 import bot_config
+import dateutil.parser
 
 class GoogleTasks:
     def __init__(self):
@@ -31,16 +32,38 @@ class GoogleTasks:
         for task in tasks['items']:
             title = task['title']
             status = task['status']
-            due = task['due'] if 'due' in task else None
+            duedate = task['due'] if 'due' in task else None
             notes = task['notes'] if 'notes' in task else ''
+
             lst.append({
                 'title': title,
                 'status': status,
-                'duedate': due,
+                'due': self.handle_due(duedate, *self.parse_duetime(notes)),
                 'duration': self.parse_duration(notes),
                 'repetition': self.parse_repetition(notes),
             })
         return lst
+
+    def handle_due(self, duedate, due_hour, due_minute):
+        if duedate is None:
+            due = datetime.datetime.now() + datetime.timedelta(30)
+        else:
+            due = dateutil.parser.parse(duedate) + datetime.timedelta(0, due_hour * 3600 + due_minute * 60)
+        return due
+
+    def parse_duetime(self, text):
+        pat = re.compile('[^\d(?:오전|오후)]*(?:\d+[^\d\s]+\s*)*\s*(오전|오후)?\s*(\d+)시\s*(반)?\s*까지.*')
+        mat = pat.match(text)
+        if mat is None:
+            return 23, 59
+        else:
+            hour = int(mat.group(2))
+            minute = 0 if mat.group(3) is None else 30
+            if mat.group(1) == '오전' and hour == 12:
+                hour = 0
+            if mat.group(1) == '오후' and hour != 12:
+                hour += 12
+            return hour, minute
 
     def parse_repetition(self, text):
         pat = re.compile('(?:\d*[^\d]+)*\s*(\d+)번.*')
