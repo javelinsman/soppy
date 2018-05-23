@@ -5,6 +5,7 @@ schedule assistant using google calendar
 from basic.module import Module
 
 from modules.schedule_assistant.google_calendar import GoogleCalendar
+from modules.schedule_assistant.google_tasks import GoogleTasks
 
 import bot_config
 
@@ -19,6 +20,7 @@ class ModuleScheduleAssistant(Module):
         self.key = {
             }
         self.calendar = GoogleCalendar()
+        self.tasks = GoogleTasks()
 
     def filter(self, message):
         return all((
@@ -36,6 +38,8 @@ class ModuleScheduleAssistant(Module):
                 if len(args) >= 2:
                     num = int(args[1])
                 self.send_text(context, self.calendar.list_from_now(num))
+            elif args[0] == '과업목록':
+                self.send_text(context, str(self.tasks.tasks()))
             elif args[0] == '일정생성':
                 m1, d1, h1, m2, d2, h2 = map(int, args[1:7])
                 title = text[text.find(':')+2:]

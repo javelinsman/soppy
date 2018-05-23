@@ -12,7 +12,7 @@ import bot_config
 class GoogleCalendar:
     def __init__(self):
         scopes = 'https://www.googleapis.com/auth/calendar'
-        store = file.Storage('credentials.json')
+        store = file.Storage('modules/schedule_assistant/credentials_calendar.json')
         creds = store.get()
         if not creds or creds.invalid:
             raise Exception("Google Calendar Authentication Error")
