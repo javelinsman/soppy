@@ -58,7 +58,7 @@ class ModuleScheduleAssistant(Module):
                 print(start)
                 print(end)
                 self.send_text(context, self.calendar.create(title, start, end))
-            elif args[0] == '스케쥴':
+            elif args[0] in ['스케쥴', '일정']:
                 tasks = self.tasks.tasks()
                 events = self.calendar.events()
                 def send_text(text):

@@ -36,13 +36,15 @@ class GoogleTasks:
             duedate = task['due'] if 'due' in task else None
             notes = task['notes'] if 'notes' in task else ''
 
-            lst.append({
+            elem = {
                 'title': title,
                 'status': status,
                 'due': self.handle_due(duedate, *self.parse_duetime(notes)),
                 'duration': self.parse_duration(notes),
                 'repetition': self.parse_repetition(notes),
-            })
+            }
+            if elem['duration'] > 0:
+                lst.append(elem)
         return lst
 
     def handle_due(self, duedate, due_hour, due_minute):
