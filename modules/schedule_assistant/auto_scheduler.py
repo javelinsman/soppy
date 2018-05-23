@@ -71,15 +71,46 @@ class GA:
             self.flattened += [i for _ in range(task['repetition'])]
         self.m = len(self.flattened)
 
-    def new_gene(self):
-        dna = list(random.sample(range(self.N), self.m))
+    def new_gene(self, dna=None):
+        if dna is None:
+            dna = list(random.sample(range(self.N), self.m))
         return Gene(dna, self.occupied, self.time_penalty, self.tasks, self.flattened)
 
-    def solve(self, timeout=180):
+    def run_once(self, timeout, basetime):
+        num_population = 1000
+        num_child = 100
+        population = [self.new_gene() for _ in range(num_population)]
+        iter = 0
+        while time.time() - basetime < timeout:
+            if population[0].penalty() == population[num_population//2].penalty():
+                break
+            children = []
+            for it in range(num_child):
+                ga = random.choice(population)
+                gb = random.choice(population)
+                new_dna = [0] * self.m
+                for i in range(self.m):
+                    if random.randint(0, 1) == 0:
+                        new_dna[i] = ga.dna[i]
+                    else:
+                        new_dna[i] = gb.dna[i]
+                for i in range(self.m):
+                    if random.randint(0, 999) < 5:
+                        new_dna[i] = min(self.N - 1, max(0, new_dna[i] + random.randint(-5, 5)))
+                children.append(self.new_gene(new_dna))
+            population += children
+            population.sort(key=lambda x:x.penalty())
+            population = population[:num_population]
+            iter += 1
+        return population[0]
+
+
+    def solve(self, timeout=30):
+        basetime = time.time()
         best_gene = None
-        ta = time.time()
-        for i in range(1000000):
-            gene = self.new_gene()
+        while time.time() - basetime < timeout:
+            gene = self.run_once(timeout, basetime)
+            print(gene.penalty())
             if best_gene is None or best_gene.penalty() > gene.penalty():
                 best_gene = gene
         result = []
