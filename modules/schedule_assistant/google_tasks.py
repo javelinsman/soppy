@@ -6,6 +6,7 @@ from apiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 import datetime
+import pytz
 import re
 
 import bot_config
@@ -49,7 +50,7 @@ class GoogleTasks:
             due = datetime.datetime.now() + datetime.timedelta(30)
         else:
             due = dateutil.parser.parse(duedate) + datetime.timedelta(0, due_hour * 3600 + due_minute * 60)
-        return due
+        return due.replace(tzinfo=pytz.timezone('Asia/Seoul'))
 
     def parse_duetime(self, text):
         pat = re.compile('[^\d(?:오전|오후)]*(?:\d+[^\d\s]+\s*)*\s*(오전|오후)?\s*(\d+)시\s*(반)?\s*까지.*')
