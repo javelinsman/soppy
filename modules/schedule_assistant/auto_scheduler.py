@@ -155,6 +155,8 @@ class AutoScheduler:
             start = dateutil.parser.parse(event['start']['dateTime'])
             end = dateutil.parser.parse(event['end']['dateTime'])
             title = event['summary'] if 'summary' in event else '(제목 없음)'
+            if stamps[N-1] + timedelta(0, 1800) <= start:
+                break
             result.append((start, end, title))
             while ind < N and stamps[ind] < start:
                 ind += 1
@@ -186,6 +188,7 @@ class AutoScheduler:
 
         misplaced, time_penalty_value, workloads, solution = self.solve_GA(occupied, penalty, tasks, timeout)
         workloads = list(map(lambda x:x/2, workloads))
+        print(workloads)
         average_worktime = sum(workloads) / len(workloads)
         overworks = len(list(filter(lambda x:x>10, workloads)))
 
@@ -205,7 +208,7 @@ class AutoScheduler:
         result.sort()
         if len(result) == 0:
             return
-        initial_date = result[0][0].date() - timedelta(1)
+        initial_date = result[0][0].date()
         prev_date = result[0][0].date() - timedelta(1)
         message = []
         for start, end, title in result:
@@ -213,6 +216,8 @@ class AutoScheduler:
                 dayname = ['월', '화', '수', '목', '금', '토', '일']
                 message.append('')
                 message.append('<%d월 %d일 %s요일>' % (start.month, start.day, dayname[start.weekday()]))
+                print((start.date()-initial_date).days)
+                print(start, end, title)
                 worktime = workloads[(start.date() - initial_date).days]
                 message.append('• 총 %d시간%s의 활동%s' % (int(worktime), ' 반' if worktime % 1 > 0 else '', '' if worktime <= 10 else '❗'))
                 prev_date = start.date()
