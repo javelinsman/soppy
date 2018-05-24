@@ -26,10 +26,7 @@ class Module(threading.Thread):
             db=bot_config.DB_NUM, namespace=module_name
             )
         self.pubsub = self.db.pubsub(ignore_subscribe_messages=True)
-        if bot_config.DEBUG:
-            self.pubsub.subscribe('debug-channel-from-interface-to-module')
-        else:
-            self.pubsub.subscribe('channel-from-interface-to-module')
+        self.pubsub.subscribe('channel-from-interface-to-module-soppy')
         self.__exit = False
 
     def run(self):
@@ -59,18 +56,22 @@ class Module(threading.Thread):
 
     def send(self, message):
         "broadcast message to sender interfaces"
-        self.db.rpush('real-log', json.dumps([time.time(), message]))
-        if bot_config.DEBUG:
-            self.db.publish('debug-channel-from-module-to-sender', json.dumps(message))
-        else:
-            self.db.publish('channel-from-module-to-sender', json.dumps(message))
+        self.db.publish('channel-from-module-to-sender-soppy', json.dumps(message))
 
-    def send_text(self, context, text):
+    def report(self, message):
+        "broadcast message to sender interfaces"
+        message["data"]["text"] = '[%s] ' % message["context"]["author_name"] + message["data"]["text"]
+        message["context"] = {"chat_id": bot_config.REPORT, "author_id": bot_config.REPORT}
+        self.db.publish('channel-from-module-to-sender-soppy', json.dumps(message))
+
+
+    def send_text(self, context, text, interface_name):
         "send plain text to context"
         message = {
             "type": 'text',
             "context": context,
             "data": {"text": text},
+            "from": interface_name,
             }
         self.send(message)
 

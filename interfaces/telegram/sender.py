@@ -15,17 +15,16 @@ from basic.database_wrapper_redis import DatabaseWrapperRedis
 
 class InterfaceTelegramSender(threading.Thread):
     "Interface to send message to Telegram messenger"
-    def __init__(self):
+    def __init__(self, api_base, interface_name):
         super().__init__()
         self.database = DatabaseWrapperRedis(
             host=bot_config.DB_HOST, port=bot_config.DB_PORT, db=bot_config.DB_NUM)
         self.pubsub = self.database.pubsub(ignore_subscribe_messages=True)
-        if bot_config.DEBUG:
-            self.pubsub.subscribe('debug-channel-from-module-to-sender')
-        else:
-            self.pubsub.subscribe('channel-from-module-to-sender')
+        self.pubsub.subscribe('channel-from-module-to-sender-soppy')
         self.__exit = False
         self.message_queues = defaultdict(queue.Queue)
+        self.api_base = api_base
+        self.interface_name = interface_name
 
     def run(self):
         while not self.__exit:
@@ -35,7 +34,8 @@ class InterfaceTelegramSender(threading.Thread):
                 if message is None:
                     break
                 message = json.loads(message["data"].decode('utf-8'))
-                self.message_queues[message["context"]["chat_id"]].put(message)
+                if message["from"] == self.interface_name:
+                    self.message_queues[message["context"]["chat_id"]].put(message)
             send_count = 0
             # Secondly, send one message for each chat_id's
             for chat_id, message_queue in list(self.message_queues.items()):
@@ -63,7 +63,7 @@ class InterfaceTelegramSender(threading.Thread):
 
     def send_message(self, cid, text):
         t = threading.Thread(target = requests.post,
-            args = (bot_config.API_BASE + 'sendMessage', ),
+            args = (self.api_base + 'sendMessage', ),
             kwargs = {
                 'data': {
                     "chat_id" : cid,
@@ -76,7 +76,7 @@ class InterfaceTelegramSender(threading.Thread):
 
     def send_message_with_markup(self, cid, text, markup):
         t = threading.Thread(target = requests.post,
-            args = (bot_config.API_BASE + 'sendMessage', ),
+            args = (self.api_base + 'sendMessage', ),
             kwargs = {
                 'data': {
                     "chat_id" : cid,
@@ -91,7 +91,7 @@ class InterfaceTelegramSender(threading.Thread):
     def send_image(self, cid, fid, caption=''):
         logging.debug('send_image(%r, %r, %r)', cid, fid, caption)
         t = threading.Thread(target = requests.post,
-            args = (bot_config.API_BASE + 'sendPhoto', ),
+            args = (self.api_base + 'sendPhoto', ),
             kwargs = {
                 'data': {
                     "chat_id" : cid,
@@ -106,7 +106,7 @@ class InterfaceTelegramSender(threading.Thread):
     def send_document(self, cid, fid):
         logging.debug('send_document(%r, %r)', cid, fid)
         t = threading.Thread(target = requests.post,
-            args = (bot_config.API_BASE + 'sendDocument', ),
+            args = (self.api_base + 'sendDocument', ),
             kwargs = {
                 'data': {
                     "chat_id" : cid,

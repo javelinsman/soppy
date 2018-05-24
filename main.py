@@ -16,7 +16,8 @@ import bot_config
 from interfaces.telegram.receiver import InterfaceTelegramReceiver
 from interfaces.telegram.sender import InterfaceTelegramSender
 from interfaces.timer.timer import Timer
-from modules.schedule_assistant.module import ModuleScheduleAssistant
+
+from modules.soppy.module import ModuleSoppy
 
 
 # Basic Settings for Program
@@ -28,12 +29,16 @@ else:
 
 # Initialize Bot Components
 INTERFACES = {
-    "telegram_receiver": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT),
-    "telegram_sender": InterfaceTelegramSender(),
+    "telegram_receiver_brand": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT_BRAND, interface_name='brand'),
+    "telegram_receiver_humanlike": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT_HUMANLIKE, interface_name='humanlike'),
+    "telegram_receiver_human": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT_HUMAN, interface_name='human'),
+    "telegram_sender_brand": InterfaceTelegramSender(bot_config.API_BASE_BRAND, interface_name='brand'),
+    "telegram_sender_humanlike": InterfaceTelegramSender(bot_config.API_BASE_HUMANLIKE, interface_name='humanlike'),
+    "telegram_sender_human": InterfaceTelegramSender(bot_config.API_BASE_HUMAN, interface_name='human'),
     "timer": Timer(),
 }
 MODULES = {
-    "schedule_assistant": ModuleScheduleAssistant(),
+    "soppy": ModuleSoppy(),
 }
 
 def start_components():

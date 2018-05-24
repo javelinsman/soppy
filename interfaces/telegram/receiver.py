@@ -16,12 +16,13 @@ from flask import Flask, request
 
 class InterfaceTelegramReceiver(threading.Thread):
     "This class is for receiveing messages from telegram by operating a Flask server"
-    def __init__(self, host, port):
+    def __init__(self, host, port, interface_name):
         super().__init__()
         self.host = host
         self.port = port
         self.db = DatabaseWrapperRedis(host=bot_config.DB_HOST, #pylint: disable=invalid-name
                                        port=bot_config.DB_PORT, db=bot_config.DB_NUM)
+        self.interface_name = interface_name
 
         self.app = Flask(__name__)
         @self.app.route("/", methods=['GET', 'POST'])
@@ -70,12 +71,9 @@ class InterfaceTelegramReceiver(threading.Thread):
                             m_data["callback_query_id"] = callback_query["id"]
 
                     m_message["data"] = m_data
+                    m_message["from"] = self.interface_name
                     logging.info('RECV: %r', m_message)
-                    if bot_config.DEBUG:
-                        self.db.publish('debug-channel-from-interface-to-module',
-                                        json.dumps(m_message))
-                    else:
-                        self.db.publish('channel-from-interface-to-module', json.dumps(m_message))
+                    self.db.publish('channel-from-interface-to-module-soppy', json.dumps(m_message))
 
             except Exception as exception: #pylint: disable=broad-except
                 logging.error('Error occured at webhook: %s', str(exception))
