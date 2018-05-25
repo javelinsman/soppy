@@ -88,6 +88,8 @@ class ModuleSoppy(Module):
         elif text == '아니오':
             self.send_text(context, sr.WHY_DIDNT_IT_WORK, message["from"])
             self.user.state(context, 'asked_why_didnt_it_work')
+        else:
+            self.send_text(context, sr.WRONG_RESPONSE_FORMAT, message["from"])
 
     def state_asked_if_it_solved(self, message):
         context = message["context"]
@@ -97,6 +99,8 @@ class ModuleSoppy(Module):
             self.user.state(context, 'asked_about_friends')
         elif text == '아니오':
             self.send_text(context, sr.WHY_DIDNT_IT_WORK, message["from"])
+        else:
+            self.send_text(context, sr.WRONG_RESPONSE_FORMAT, message["from"])
             self.user.state(context, 'asked_why_didnt_it_work')
 
     def state_asked_why_didnt_it_work(self, message):
@@ -125,6 +129,8 @@ class ModuleSoppy(Module):
             time.sleep(3)
             self.send_text(context, sr.ALL_SOLVED_BAD, message["from"])
             self.user.state(context, '')
+        else:
+            self.send_text(context, sr.WRONG_RESPONSE_FORMAT, message["from"])
 
     def execute_user_command(self, message):
         "executes commands entered in user's chat"
