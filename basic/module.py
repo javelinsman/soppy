@@ -56,15 +56,19 @@ class Module(threading.Thread):
 
     def send(self, message):
         "broadcast message to sender interfaces"
+        self.db.rpush('real-log', json.dumps([time.time(), message]))
         self.db.publish('channel-from-module-to-sender-soppy', json.dumps(message))
 
     def report(self, message):
         "broadcast message to sender interfaces"
-        message["data"]["text"] = '[%s] ' % message["context"]["author_name"] + message["data"]["text"]
-        message["context"] = {"chat_id": bot_config.REPORT, "author_id": bot_config.REPORT}
-        self.db.publish('channel-from-module-to-sender-soppy', json.dumps(message))
-
-
+        new_message = {
+            "type": 'text', 
+            "context": {"chat_id": bot_config.REPORT, "author_id": bot_config.REPORT},
+            "data": {"text":'[%s] ' % message["context"]["author_name"] + message["data"]["text"]},
+            "from": message["from"],
+            }
+        self.send(new_message)
+    
     def send_text(self, context, text, interface_name):
         "send plain text to context"
         message = {

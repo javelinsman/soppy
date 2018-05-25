@@ -8,11 +8,7 @@ This module contains
     - team notification
 """
 
-import logging
-import json
-import datetime
-import random
-
+import time
 
 from modules.soppy import string_resources as sr
 from modules.soppy.user import User
@@ -69,6 +65,7 @@ class ModuleSoppy(Module):
 
     def state_asked_trouble(self, message):
         context = message["context"]
+        time.sleep(3)
         self.send_text(context, sr.DETAILED_EXPLANATION, message["from"])
         self.user.state(context, 'asked_detail')
 
@@ -121,19 +118,25 @@ class ModuleSoppy(Module):
         context = message["context"]
         text = message["data"]["text"]
         if text == '네':
+            time.sleep(3)
             self.send_text(context, sr.ALL_SOLVED_GOOD % self.user.nick(context), message["from"])
             self.user.state(context, '')
         elif text == '아니오':
+            time.sleep(3)
             self.send_text(context, sr.ALL_SOLVED_BAD, message["from"])
             self.user.state(context, '')
 
     def execute_user_command(self, message):
         "executes commands entered in user's chat"
         context = message["context"]
+        text = message["data"]["text"]
         state = self.user.state(context)
         if state is None:
-            self.send_text(context, sr.HELLO_YOUR_NAME, message["from"])
-            self.user.state(context, 'asked_nick')
+            if '안녕' in text:
+                self.send_text(context, sr.HELLO_YOUR_NAME, message["from"])
+                self.user.state(context, 'asked_nick')
+            else:
+                self.send_text(context, sr.EXPERIMENT_END, message["from"])
         else:
             getattr(self, 'state_' + state)(message)
 
