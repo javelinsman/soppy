@@ -99,9 +99,9 @@ class ModuleSoppy(Module):
             self.user.state(context, 'asked_about_friends')
         elif text == '아니오':
             self.send_text(context, sr.WHY_DIDNT_IT_WORK, message["from"])
+            self.user.state(context, 'asked_why_didnt_it_work')
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT, message["from"])
-            self.user.state(context, 'asked_why_didnt_it_work')
 
     def state_asked_why_didnt_it_work(self, message):
         context = message["context"]

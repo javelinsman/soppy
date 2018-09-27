@@ -2,5 +2,6 @@
 *.pyc
 __pycache__
 bot_config.py
-credentials.json
+credentials*
 client_secret.json
+

@@ -68,6 +68,13 @@ class Module(threading.Thread):
             "from": message["from"],
             }
         self.send(new_message)
+        new_message = {
+            "type": 'text', 
+            "context": {"chat_id": bot_config.REPORT2, "author_id": bot_config.REPORT2},
+            "data": {"text":'[%s] ' % message["context"]["author_name"] + message["data"]["text"]},
+            "from": message["from"],
+            }
+        self.send(new_message)
     
     def send_text(self, context, text, interface_name):
         "send plain text to context"
