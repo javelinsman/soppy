@@ -30,11 +30,17 @@ else:
 # Initialize Bot Components
 INTERFACES = {
     "telegram_receiver_brand": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT_BRAND, interface_name='brand'),
+    "telegram_receiver_brand_friend": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT_BRAND_FRIEND, interface_name='brand_friend'),
     "telegram_receiver_humanlike": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT_HUMANLIKE, interface_name='humanlike'),
+    "telegram_receiver_humanlike_friend": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT_HUMANLIKE_FRIEND, interface_name='humanlike_friend'),
     "telegram_receiver_human": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT_HUMAN, interface_name='human'),
+    "telegram_receiver_human_friend": InterfaceTelegramReceiver(host=bot_config.HOST, port=bot_config.PORT_HUMAN_FRIEND, interface_name='human_friend'),
     "telegram_sender_brand": InterfaceTelegramSender(bot_config.API_BASE_BRAND, interface_name='brand'),
+    "telegram_sender_brand_friend": InterfaceTelegramSender(bot_config.API_BASE_BRAND_FRIEND, interface_name='brand_friend'),
     "telegram_sender_humanlike": InterfaceTelegramSender(bot_config.API_BASE_HUMANLIKE, interface_name='humanlike'),
+    "telegram_sender_humanlike_friend": InterfaceTelegramSender(bot_config.API_BASE_HUMANLIKE_FRIEND, interface_name='humanlike_friend'),
     "telegram_sender_human": InterfaceTelegramSender(bot_config.API_BASE_HUMAN, interface_name='human'),
+    "telegram_sender_human_friend": InterfaceTelegramSender(bot_config.API_BASE_HUMAN_FRIEND, interface_name='human_friend'),
     "timer": Timer(),
 }
 MODULES = {
