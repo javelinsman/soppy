@@ -37,11 +37,21 @@ class ModuleSoppy(Module):
         context = message["context"]
         return message["type"] == 'text'
 
+    def is_friend(self, message):
+        return message["from"].endswith("friend")
+
     def state_asked_nick(self, message):
         "response should be their wanted nickname"
         context = message["context"]
         text = message["data"]["text"]
-        self.send_text(context, sr.CONFIRM_NICKNAME % text, message["from"])
+        if '라고불러줘' not in text.replace(" ", ""):
+            self.send_text(context, sr.WRONG_RESPONSE_FORMAT, message["from"])
+            return
+        text =  "".join(text.replace(" ", "").split('라고불러줘')[:-1]).strip().rstrip("이")
+        if self.is_friend(message):
+            self.send_text(context, sr.CONFIRM_NICKNAME_FRIEND % text, message["from"])
+        else:
+            self.send_text(context, sr.CONFIRM_NICKNAME % text, message["from"])
         serialized = self.serialize_context(context)
         self.db.set('candidate-nickname:%s' % serialized, text)
         self.user.state(context, 'asked_nick_confirmation')
@@ -51,22 +61,44 @@ class ModuleSoppy(Module):
            submitted correctly"""
         context = message["context"]
         text = message["data"]["text"]
-        if text == sr.RESPONSE_NICKNAME_YES:
+        if (self.is_friend(message) and text == sr.RESPONSE_NICKNAME_YES_FRIEND) or \
+           (not self.is_friend(message) and text == sr.RESPONSE_NICKNAME_YES):
             serialized = self.serialize_context(context)
             nickname = self.db.get('candidate-nickname:%s' % serialized)
             self.user.nick(context, nickname)
-            self.send_text(context, sr.OKAY_WHATS_YOUR_TROUBLE % nickname, message["from"])
-            self.user.state(context, 'asked_trouble')
-        elif text == sr.RESPONSE_NICKNAME_NO:
+            self.send_text(context, sr.HOW_DO_YOU_FEEL % nickname, message["from"])
+            self.user.state(context, 'asked_small_talk_1')
+        elif (self.is_friend(message) and text == sr.RESPONSE_NICKNAME_NO_FRIEND) or \
+             (not self.is_friend(message) and text == sr.RESPONSE_NICKNAME_NO):
             self.send_text(context, sr.ASK_NICKNAME_AGAIN, message["from"])
             self.user.state(context, 'asked_nick')
         else:
             self.send_text(context, sr.WRONG_RESPONSE_FORMAT, message["from"])
 
+    def state_asked_small_talk_1(self, message):
+        context = message["context"]
+        self.send_text(context, sr.HAVE_YOU_EATEN_MEAL, message["from"])
+        self.user.state(context, 'asked_small_talk_2')
+
+    def state_asked_small_talk_2(self, message):
+        context = message["context"]
+        self.send_text(context, sr.HOW_IS_YOUR_SCHOOL, message["from"])
+        self.user.state(context, 'asked_small_talk_3')
+
+    def state_asked_small_talk_3(self, message):
+        context = message["context"]
+        self.send_text(context, sr.WHATS_UP % self.user.nick(context), message["from"])
+        self.user.state(context, 'asked_trouble_intro')
+
+    def state_asked_trouble_intro(self, message):
+        context = message["context"]
+        self.send_text(context, sr.OKAY_WHATS_YOUR_TROUBLE % self.user.nick(context), message["from"])
+        self.user.state(context, 'asked_trouble')
+
     def state_asked_trouble(self, message):
         context = message["context"]
         time.sleep(3)
-        self.send_text(context, sr.DETAILED_EXPLANATION, message["from"])
+        self.send_text(context, sr.DETAILED_EXPLANATION % self.user.nick(context), message["from"])
         self.user.state(context, 'asked_detail')
 
     def state_asked_detail(self, message):
@@ -76,16 +108,24 @@ class ModuleSoppy(Module):
 
     def state_asked_what_did_you_do(self, message):
         context = message["context"]
-        self.send_text(context, sr.DID_IT_WORK, message["from"])
+        if self.is_friend(message):
+            self.send_text(context, sr.DID_IT_WORK_FRIEND, message["from"])
+        else:
+            self.send_text(context, sr.DID_IT_WORK, message["from"])
         self.user.state(context, 'asked_if_it_worked')
 
     def state_asked_if_it_worked(self, message):
         context = message["context"]
         text = message["data"]["text"]
-        if text == '네':
-            self.send_text(context, sr.DID_IT_SOLVED_YOUR_PROBLEM, message["from"])
+        if (self.is_friend(message) and text == sr.RESPONSE_DID_IT_WORK_YES_FRIEND) or \
+             (not self.is_friend(message) and text.replace(" ", "") in sr.RESPONSE_DID_IT_WORK_YES.replace(" ", "")):
+            if self.is_friend(message):
+                self.send_text(context, sr.DID_IT_SOLVED_YOUR_PROBLEM_FRIEND, message["from"])
+            else:
+                self.send_text(context, sr.DID_IT_SOLVED_YOUR_PROBLEM, message["from"])
             self.user.state(context, 'asked_if_it_solved')
-        elif text == '아니오':
+        elif (self.is_friend(message) and text == sr.RESPONSE_DID_IT_WORK_NO_FRIEND) or \
+             (not self.is_friend(message) and text.replace(" ", "") in sr.RESPONSE_DID_IT_WORK_NO.replace(" ", "")):
             self.send_text(context, sr.WHY_DIDNT_IT_WORK, message["from"])
             self.user.state(context, 'asked_why_didnt_it_work')
         else:
@@ -94,10 +134,12 @@ class ModuleSoppy(Module):
     def state_asked_if_it_solved(self, message):
         context = message["context"]
         text = message["data"]["text"]
-        if text == '네':
+        if (self.is_friend(message) and text == sr.RESPONSE_DID_IT_SOLVED_YES_FRIEND) or \
+             (not self.is_friend(message) and text.replace(" ", "") in sr.RESPONSE_DID_IT_SOLVED_YES.replace(" ", "")):
             self.send_text(context, sr.HOW_ABOUT_FRIENDS, message["from"])
             self.user.state(context, 'asked_about_friends')
-        elif text == '아니오':
+        elif (self.is_friend(message) and text == sr.RESPONSE_DID_IT_SOLVED_NO_FRIEND) or \
+             (not self.is_friend(message) and text.replace(" ", "") in sr.RESPONSE_DID_IT_SOLVED_NO.replace(" ", "")):
             self.send_text(context, sr.WHY_DIDNT_IT_WORK, message["from"])
             self.user.state(context, 'asked_why_didnt_it_work')
         else:
@@ -115,17 +157,22 @@ class ModuleSoppy(Module):
 
     def state_asked_about_friends(self, message):
         context = message["context"]
-        self.send_text(context, sr.NOW_ALL_SOLVED, message["from"])
+        if self.is_friend(message):
+            self.send_text(context, sr.NOW_ALL_SOLVED_FRIEND, message["from"])
+        else:
+            self.send_text(context, sr.NOW_ALL_SOLVED, message["from"])
         self.user.state(context, 'asked_now_all_solved')
 
     def state_asked_now_all_solved(self, message):
         context = message["context"]
         text = message["data"]["text"]
-        if text == '네':
+        if (self.is_friend(message) and text == sr.RESPONSE_ALL_SOLVED_YES_FRIEND) or \
+             (not self.is_friend(message) and text.replace(" ", "") in sr.RESPONSE_ALL_SOLVED_YES.replace(" ", "")):
             time.sleep(3)
             self.send_text(context, sr.ALL_SOLVED_GOOD % self.user.nick(context), message["from"])
             self.user.state(context, '')
-        elif text == '아니오':
+        elif (self.is_friend(message) and text == sr.RESPONSE_ALL_SOLVED_NO_FRIEND) or \
+             (not self.is_friend(message) and text.replace(" ", "") in sr.RESPONSE_ALL_SOLVED_NO.replace(" ", "")):
             time.sleep(3)
             self.send_text(context, sr.ALL_SOLVED_BAD, message["from"])
             self.user.state(context, '')
@@ -138,7 +185,7 @@ class ModuleSoppy(Module):
         text = message["data"]["text"]
         state = self.user.state(context)
         if state is None:
-            if '안녕' in text:
+            if '소피' in text:
                 self.send_text(context, sr.HELLO_YOUR_NAME, message["from"])
                 self.user.state(context, 'asked_nick')
             else:
